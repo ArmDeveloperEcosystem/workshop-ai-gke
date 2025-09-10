@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-storage-pod
+spec:
+  nodeSelector:
+    kubernetes.io/arch: arm64
+  containers:
+  - name: init-container
+    image: busybox
+    command: ["/bin/sh", "-c"]
+    args: ["echo 'Hello, Kubernetes!' && find /data && sleep 60s"]
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "8Gi"
+        cpu: "1000m"
+    volumeMounts:
+    - mountPath: /data
+      name: storage-volume
+  volumes:
+  - name: storage-volume
+    persistentVolumeClaim:
+      claimName: vllm-models

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vllm
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      containers:
+      - name: vllm
+        image: us-central1-docker.pkg.dev/arm-evangelism-dev/vllm-cpu-env/arm:latest
+        command: ["/bin/sh", "-c"]
+        args: [
+          "vllm serve /root/.cache/huggingface/models--google--gemma-3-270m/snapshots/9b0cfec892e2bc2afd938c98eabe4e4a7b1e0ca1 --dtype=bfloat16 --disable-sliding-window"
+        ]
+        resources:
+          requests:
+            cpu: "1"
+            memory: "4Gi"
+          limits:
+            cpu: "15"
+            memory: "60Gi"
+        env:
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-token-secret
+              key: token
+        - name: HF_HUB_OFFLINE
+          value: "1"
+        - name: VLLM_USE_V1
+          value: "1"
+        - name: VLLM_CPU_KVCACHE_SPACE
+          value: "40"
+        - name: VLLM_CPU_NUM_OF_RESERVED_CPU
+          value: "1"
+        ports:
+          - containerPort: 8000
+        volumeMounts:
+          - name: model-storage
+            mountPath: /root/.cache/huggingface
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: vllm-models
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-server
+spec:
+  selector:
+    app.kubernetes.io/name: vllm
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000
+  type: ClusterIP
