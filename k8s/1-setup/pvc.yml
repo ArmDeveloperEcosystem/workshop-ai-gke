@@ -10,11 +10,3 @@ spec:
   resources:
     requests:
       storage: 50Gi
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: hf-token-secret
-type: Opaque
-stringData:
-  token: "<HF SECRET>"
