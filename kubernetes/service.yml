@@ -14,6 +14,7 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/arch: arm64
+        cloud.google.com/compute-class: c4a
       containers:
       - name: vllm
         image: us-central1-docker.pkg.dev/arm-evangelism-dev/vllm-cpu-env/arm:latest

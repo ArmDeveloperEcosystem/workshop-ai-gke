@@ -5,6 +5,7 @@ metadata:
 spec:
   nodeSelector:
     kubernetes.io/arch: arm64
+    cloud.google.com/compute-class: c4a
   containers:
   - name: init-container
     image: busybox
