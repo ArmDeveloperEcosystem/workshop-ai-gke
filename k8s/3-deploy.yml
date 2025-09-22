@@ -48,6 +48,12 @@ spec:
         volumeMounts:
           - name: model-storage
             mountPath: /root/.cache/huggingface
+        securityContext:
+          seccompProfile:
+            type: Unconfined
+          capabilities:
+            add:
+            - SYS_NICE
       volumes:
       - name: model-storage
         persistentVolumeClaim:
