@@ -1,146 +1,120 @@
-# workshop-ai-gke
+# Initial Steps
 
-A workshop for building out a AI application using Google Kubernetes Engine
+This is a rough breakdown of manually creating a vLLM deployment on Arm based GKE.
 
-## Initial Setup
+## Prepare cluster
 
-This lab builds upon the previous example and assumes you already have a GKE cluster deployed.
+TODO: Make sure original microservice repo is fully deployed and working
 
-## Workshop Steps
+## Prepare Llama.cpp
 
-Now we can deploy our own custom LLM model to run entirely within our GKE cluster.
+TODO: Write section about making llama cpp image
 
-### Prepare vLLM image
+1. Download llama.cpp repo (NOTE COMMIT/VERSION IN DOCUMENTATION)
+1. Build from docker file in that repo (Should build both CLI and Server images from one docker file)
+1. Upload JUST THE SERVER image to Google Artifact Registry
 
-In order to deploy vLLM on Arm based Axion processors, we need to rebuild it from course code.
+Make an image from docker template to be included in this repo, using command that ensures it makes an arm64 ONLY build
 
-To do this, we can [follow the instructions from the official documentation](https://docs.vllm.ai/en/latest/getting_started/installation/cpu.html).
+## Prepare Model
 
-Clone the vLLM repo:
+TODO: Finalize this section
 
-<ql-code-block templated bash>
-git clone https://github.com/vllm-project/vllm.git vllm_source
-cd vllm_source
-</ql-code-block>
+Using Llama.cpp CLI image we just built
 
-Now we can build the vLLM image using Docker
+Get a hugging face token and save it for this step
 
-<ql-code-block templated bash>
-docker build -f docker/Dockerfile.cpu --tag vllm-cpu-env .
-</ql-code-block>
+Download locally `google/gemma-3-4b-it` using Hugging Face.
 
-Next, in the real world we would push our image to our GCP Project's Artifact Repo. Ensuring that your user account has READ access.
+Optimize it for Axion architecture
 
-However, we have done the work for you, so we can move onto the next step.
+## Deploy Llama.cpp kubernetes
 
-### Prepare Model
+TODO: Fill out section to deploy llama.cpp image
 
-Download locally a model using Hugging Face. I did gemma-3-270m for first test just because it was so small made it faster.
+## Deploy model file
 
-Do optimizations for it here.
+TODO: Fill out section
 
-Ensure it downloads the model do you hugging face cache folder.
+Upload file into persistent file storage in our existing GKE.
 
-<ql-code-block>
-~/.cache/huggingface/hub/models--google--gemma-3-270m/
-</ql-code-block>
+## Test AI
 
-### Prepare Kubernetes
+TODO: Run a curl command and make sure it works
 
-We need to create a Storage Class, a Persistent Volume Claim, a Compute Class, and a Secret.
+## Prepare Shopping Assistant
 
-Let's review each file:
+TODO: Fill out this section
 
-#### `k8s/1-setup/c4a-cc.yml`
+Make an image for shopping assistant based on files in this repo
 
-Defines a compute class of c4a with a minimum of 4 cores.
+## Deploy Shopping Assistant
 
-<ql-code-block templated bash>
-kubectl apply -f k8s/1-setup/c4a-cc.yml
-</ql-code-block>
+TODO: Fill out this
 
-#### `k8s/1-setup/storage-class.yml`
+Deploy the shopping assistant to existing kubernetes cluster
 
-Make a storage class that works with c4a. "persistent" not available on c4a, needs to be "hyperdisk"
+## Test
 
-<ql-code-block templated bash>
-kubectl apply -f k8s/1-setup/storage-class.yml
-</ql-code-block>
+TODO: fill out section
 
-#### `k8s/1-setup/pvc.yml`
+Make sure it works!
 
-Set up our model persistent volume storage we will mount to our vLLM pod.
 
-<ql-code-block templated bash>
-kubectl apply -f k8s/1-setup/pvc.yml
-</ql-code-block>
 
-#### `k8s/1-setup/secret.yml`
+# Old sections, keeping for reference to fill out above
 
-Set our Hugging Face secret. Note you will need to modify this to include your unqiue secret read access token
+### OLD: Kubernetes Apply
 
-TODO: Flesh out this step with more specifics and maybe google variables.
+In order.
 
-<ql-code-block templated bash>
-kubectl apply -f k8s/1-setup/secret.yml
-</ql-code-block>
+- c4a-cc.yaml
+    NOT USED, but need if doing auto. Will have working example in final workshop
 
-### Upload model to Kubernetes
+- hdb-example-class.yaml
+    Make a storage that works with c4a ("persistent" not available, needs to be "hyperdisk")
 
-We now need to make a basic pod that mounts our persistent storage we just created. Then we can copy our local model file into our kubernetes cluster.
+- pvc.yml
+    Connect to storage and also set secret
+    Will need to set secret in "proper" way in final workshop. This is secure, but may be better to not manually set. Or manual may be fine, we'll see.
 
-<ql-code-block templated bash>
-kubectl apply -f k8s/2-temp-loader.yml
-</ql-code-block>
+- init.yml
+    Load the files into persistent storage.
 
-Now we need to copy the file:
+    Can't access it directly so making a simple pod that can copy the files locally into.
 
-<ql-code-block templated bash>
-kubectl cp ~/.cache/huggingface/hub/models--google--gemma-3-270m/ init-storage-pod:/data/hub/models--google--gemma-3-270m/
+    ```bash
+    kubectl cp ~/.cache/huggingface/hub/models--google--gemma-3-270m/ init-storage-pod:/data/hub/models--google--gemma-3-270m/
+    ```
 
-Ensure your paths are correct. Give it a minute for the command to upload the file, this may take a moment due to size.
+    Ensure paths are correct, but above by default should be right.
 
-Once the file is updated successfully, we no longer want our temporary pod.
+- service.yaml
+    Actually deploy vLLM!
 
-<ql-code-block templated bash>
-kubectl delete -f k8s/2-temp-loader.yml
-</ql-code-block>
+    Note the required environment variables.
 
-TODO: Note that this whole section doesn't matter if the model we want quantized how we want it is publicly available on HuggingFace and GKE can download from outside.
+    Needed to pass `--disable-sliding-window` but that may depend on model
 
-### Deploy vLLM to Kubernetes
+    Using a specfic image name from my local downloaded hugging face. In final form will need to confirm that is right snapshot id.
 
-Now it's time to deploy our service and pod for vLLM itself, using a publicly available version of the image we made earlier.
-
-First, ensure the environment variables defined here are correct
-
-TODO: Go through environment variables for vLLM pod. Needed to pass `--disable-sliding-window` but that may depend on model
-
-<ql-code-block templated bash>
-kubectl apply -f k8s/3-deploy.yml
-</ql-code-block>
-
-### Deploy Microservice to Kubernetes
-
-Deploy our microservice we need to connect to existing project.
-
-Also make sure we set variables correctly in project to point to this microservice, and the microservice has variable to point to vllm instance
-
-TODO: Write section on Microservice
-
-## Testing
-
-TODO: Write section on Testing
+### OLD Testing
 
 Insert pod name here and run curl locally on pod
 
 ```bash
-kubectl exec vllm-server-f98779f6b-66mdr -- curl http://localhost:8000/v1/completions \
-    -H "Content-Type: application/json" \
-    -d '{
-        "model": "/root/.cache/huggingface/models--google--gemma-3-270m/snapshots/9b0cfec892e2bc2afd938c98eabe4e4a7b1e0ca1",
-        "prompt": "San Francisco is a",
-        "max_tokens": 7,
-        "temperature": 0
-    }'
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  --data '{
+  "model": "google/gemma-3-4b-it",
+    "messages": [
+    {
+        "role": "user",
+        "content": [
+        {
+            "type": "text",
+            "text": "Describe what a pizza is."
+        }]
+    }]
+  }'
 ```
