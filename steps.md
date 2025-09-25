@@ -69,12 +69,18 @@ In order.
 Insert pod name here and run curl locally on pod
 
 ```bash
-kubectl exec vllm-server-f98779f6b-66mdr -- curl http://localhost:8000/v1/completions \
-    -H "Content-Type: application/json" \
-    -d '{
-        "model": "/root/.cache/huggingface/models--google--gemma-3-270m/snapshots/9b0cfec892e2bc2afd938c98eabe4e4a7b1e0ca1",
-        "prompt": "San Francisco is a",
-        "max_tokens": 7,
-        "temperature": 0
-    }'
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  --data '{
+  "model": "google/gemma-3-4b-it",
+    "messages": [
+    {
+        "role": "user",
+        "content": [
+        {
+            "type": "text",
+            "text": "Describe what a pizza is."
+        }]
+    }]
+  }'
 ```
