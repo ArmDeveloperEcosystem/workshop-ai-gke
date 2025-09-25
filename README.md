@@ -52,7 +52,6 @@ TODO MICHAEL: Run a curl command and make sure it works
 
 ## Prepare Shopping Assistant
 
-TODO AVIN: Move code into this repo
 TODO MICHAEL: Finalize code to remove hard coded database
 TODO AVIN: Fill out this section
 
