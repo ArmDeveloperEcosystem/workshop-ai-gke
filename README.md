@@ -4,11 +4,19 @@ A workshop for building out a AI application using Google Kubernetes Engine
 
 ## Prepare cluster
 
-TODO: Make sure original microservice repo is fully deployed and working
+TODO AVIN: Make sure original microservice repo is fully deployed and working
+
+## Prepare work environment
+
+TODO MICHAEL: Explain this
+
+Get a Virtual Machine running Axion that we can work in
+
+(THIS MAY ALREADY BE PART OF FIRST WORKSHOP?)
 
 ## Prepare Llama.cpp
 
-TODO: Write section about making llama cpp image
+TODO MICHAEL: Write section about making llama cpp image
 
 1. Download llama.cpp repo (NOTE COMMIT/VERSION IN DOCUMENTATION)
 1. Build from docker file in that repo (Should build both CLI and Server images from one docker file)
@@ -18,7 +26,7 @@ Make an image from docker template to be included in this repo, using command th
 
 ## Prepare Model
 
-TODO: Finalize this section
+TODO MICHAEL: Finalize this section
 
 Using Llama.cpp CLI image we just built
 
@@ -30,32 +38,36 @@ Optimize it for Axion architecture
 
 ## Deploy Llama.cpp kubernetes
 
-TODO: Fill out section to deploy llama.cpp image
+TODO AVIN: Fill out section to deploy llama.cpp image
 
 ## Deploy model file
 
-TODO: Fill out section
+TODO AVIN: Fill out section
 
 Upload file into persistent file storage in our existing GKE.
 
 ## Test AI
 
-TODO: Run a curl command and make sure it works
+TODO MICHAEL: Run a curl command and make sure it works
 
 ## Prepare Shopping Assistant
 
-TODO: Fill out this section
+TODO AVIN: Move code into this repo
+TODO MICHAEL: Finalize code to remove hard coded database
+TODO AVIN: Fill out this section
 
 Make an image for shopping assistant based on files in this repo
 
+Ensure environment variable is hard coded to internal URL of already deployed llama.cpp
+
 ## Deploy Shopping Assistant
 
-TODO: Fill out this
+TODO AVIN: Fill out this
 
 Deploy the shopping assistant to existing kubernetes cluster
 
 ## Test
 
-TODO: fill out section
+TODO MICHAEL: fill out section
 
 Make sure it works!
