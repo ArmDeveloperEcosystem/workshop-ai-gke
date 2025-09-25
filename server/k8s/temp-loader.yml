@@ -5,7 +5,6 @@ metadata:
 spec:
   nodeSelector:
     kubernetes.io/arch: arm64
-    cloud.google.com/compute-class: c4a
   containers:
   - name: temp-loader-container
     image: busybox

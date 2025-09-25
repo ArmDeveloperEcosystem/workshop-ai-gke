@@ -14,7 +14,6 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/arch: arm64
-        cloud.google.com/compute-class: c4a
       containers:
       - name: vllm
         image: us-central1-docker.pkg.dev/arm-evangelism-dev/vllm-cpu-env/arm:latest
@@ -30,11 +29,6 @@ spec:
             cpu: "15"
             memory: "60Gi"
         env:
-        - name: HUGGING_FACE_HUB_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: hf-token-secret
-              key: token
         - name: HF_HUB_OFFLINE
           value: "1"
         - name: VLLM_USE_V1
