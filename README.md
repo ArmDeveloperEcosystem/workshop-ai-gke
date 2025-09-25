@@ -58,9 +58,14 @@ gcloud compute ssh $INSTANCE_NAME --zone $ZONE --ssh-flag='-l cos'
 
 TODO MICHAEL: Write section about making llama cpp image
 
-1. Download llama.cpp repo (NOTE COMMIT/VERSION IN DOCUMENTATION)
-1. Build from docker file in that repo (Should build both CLI and Server images from one docker file)
-1. Upload JUST THE SERVER image to Google Artifact Registry
+Build from docker file in that repo (Should build both full and Server images from one docker file)
+```
+export DOCKER_IMAGE="armsoftwaredev/llama-cpp"
+docker buildx build -f llm/Dockerfile --target full --tag ${DOCKER_IMAGE}:latest .
+docker buildx build -f llm/Dockerfile --target server --tag ${DOCKER_IMAGE}-server:latest .
+```
+
+Upload JUST THE SERVER image to Google Artifact Registry
 
 Make an image from docker template to be included in this repo, using command that ensures it makes an arm64 ONLY build
 
@@ -68,13 +73,18 @@ Make an image from docker template to be included in this repo, using command th
 
 TODO MICHAEL: Finalize this section
 
-Using Llama.cpp CLI image we just built
-
 Get a hugging face token and save it for this step
-
 Download locally `google/gemma-3-4b-it` using Hugging Face.
+```
+export HF_TOKEN=<your_hf_token>
+huggingface-cli download google/gemma-3-4b-it-qat-q4_0-gguf
+```
 
-Optimize it for Axion architecture
+Using Llama.cpp CLI image we just built, optimize it for Axion architecture
+```
+docker run -v ~/.cache/huggingface/hub/:/app/hfmodels -v ./:/app/localdir ${DOCKER_IMAGE} --quantize --allow-requantize /app/hfmodels/models--google--gemma-3-4b-it-qat-q4_0-gguf/snapshots/15f73f5eee9c28f53afefef5723e29680c2fc78a/gemma-3-4b-it-q4_0.gguf /app/localdir/gemma-3-4b-it-q4_0_arm.gguf Q4_0 
+cp ~/.cache/huggingface/hub/models--google--gemma-3-4b-it-qat-q4_0-gguf/snapshots/15f73f5eee9c28f53afefef5723e29680c2fc78a/mmproj-model-f16-4B.gguf ./
+```
 
 ## Deploy Llama.cpp kubernetes
 
