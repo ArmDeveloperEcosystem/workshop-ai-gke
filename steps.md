@@ -2,35 +2,69 @@
 
 This is a rough breakdown of manually creating a vLLM deployment on Arm based GKE.
 
-## Prepare vLLM
-
-https://docs.vllm.ai/en/latest/getting_started/installation/cpu.html
-
-1. Clone vLLM repo
-1. Build via docker
-
-```bash
-docker build -f docker/Dockerfile.cpu --tag vllm-cpu-env .
-```
-
-Push to GKE Artifact Repo
-
-1. Ensure it is in correct project
-1. Ensure that your user account has READ access, not just admin access. (Public is also good)
-
 ## Prepare cluster
 
-1. Deploy manual Cluster
+TODO: Make sure original microservice repo is fully deployed and working
 
-On Arm internal subscription, must not use IP to connect. Ensure "Private" is check and IP address is unchecked
+## Prepare Llama.cpp
+
+TODO: Write section about making llama cpp image
+
+1. Download llama.cpp repo (NOTE COMMIT/VERSION IN DOCUMENTATION)
+1. Build from docker file in that repo (Should build both CLI and Server images from one docker file)
+1. Upload JUST THE SERVER image to Google Artifact Registry
+
+Make an image from docker template to be included in this repo, using command that ensures it makes an arm64 ONLY build
 
 ## Prepare Model
 
-Download locally a model using Hugging Face. I did gemma-3-270m for first test just because it was so small made it faster.
+TODO: Finalize this section
 
-Ideally do optimizations for it here.
+Using Llama.cpp CLI image we just built
 
-## Kubernetes Apply
+Get a hugging face token and save it for this step
+
+Download locally `google/gemma-3-4b-it` using Hugging Face.
+
+Optimize it for Axion architecture
+
+## Deploy Llama.cpp kubernetes
+
+TODO: Fill out section to deploy llama.cpp image
+
+## Deploy model file
+
+TODO: Fill out section
+
+Upload file into persistent file storage in our existing GKE.
+
+## Test AI
+
+TODO: Run a curl command and make sure it works
+
+## Prepare Shopping Assistant
+
+TODO: Fill out this section
+
+Make an image for shopping assistant based on files in this repo
+
+## Deploy Shopping Assistant
+
+TODO: Fill out this
+
+Deploy the shopping assistant to existing kubernetes cluster
+
+## Test
+
+TODO: fill out section
+
+Make sure it works!
+
+
+
+# Old sections, keeping for reference to fill out above
+
+### OLD: Kubernetes Apply
 
 In order.
 
@@ -64,7 +98,7 @@ In order.
 
     Using a specfic image name from my local downloaded hugging face. In final form will need to confirm that is right snapshot id.
 
-## Testing
+### OLD Testing
 
 Insert pod name here and run curl locally on pod
 
