@@ -175,17 +175,42 @@ kubectl exec llm-server -- curl -X POST "http://localhost:8000/v1/chat/completio
 ## 5. Prepare Shopping Assistant
 
 TODO MICHAEL: Finalize code to remove hard coded database
-TODO AVIN: Fill out this section
 
-Make an image for shopping assistant based on files in this repo
+TODO AVIN: Explain how to make an image for shopping assistant based on files in this repo
 
-Ensure environment variable is hard coded to internal URL of already deployed llama.cpp
+Before deploying the Shopping Assistant service, you need to update the configuration to point to your running Llama.cpp server.
+
+### Find the LLM Server Load Balancer IP**
+
+To get the IP address of your llm service, run:
+
+```bash
+kubectl get svc llm-server
+```
+
+Look for the `EXTERNAL-IP` column in the output. Use this IP address in the next step.
+
+### Update the LLM Server Endpoint
+
+Open `shoppingassistantservice/k8s/shoppingassistantservice.yaml` and locate line 54:
+
+```yaml
+    value: "http://100.26.35.143:8000"
+```
+
+Replace `100.26.35.143` with the external IP address of your deployed `llm-server` service.
+
+### Deploy the Shopping Assistant Service
 
 ## 6. Deploy Shopping Assistant
 
-TODO AVIN: Fill out this
+Once everything is updated, apply the Kubernetes manifest:
 
-Deploy the shopping assistant to existing kubernetes cluster
+```bash
+kubectl apply -f shoppingassistantservice/k8s/shoppingassistantservice.yaml
+```
+
+This will create the deployment and service for the Shopping Assistant in your cluster.
 
 ## 7. Test
 
