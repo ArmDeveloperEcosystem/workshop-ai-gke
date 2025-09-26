@@ -133,6 +133,7 @@ kubectl apply -f server/k8s/deploy.yml
 </ql-code-block>
 
 TODO AVIN: Explain this further
+TODO MICHAEL: Confirm server arguments, where model file(s) need to be.
 
 ### Deploy model file
 
