@@ -9,7 +9,13 @@ spec:
   - name: temp-loader-container
     image: busybox
     command: ["/bin/sh", "-c"]
-    args: ["echo 'Hello, Kubernetes!' && find /models && sleep 60s"]
+    args: 
+      - |
+        while true; do
+          echo "Listing files in /models/ at $(date):"
+          find /models/ -type f
+          sleep 30
+        done
     resources:
       requests:
         memory: "64Mi"

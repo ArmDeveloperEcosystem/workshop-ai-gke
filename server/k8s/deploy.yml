@@ -22,8 +22,8 @@ spec:
           - -c
           - |
             set -e
-            MODEL="~/models/gemma-3-4b-it-q4_0_arm.gguf"
-            MMPROJ="~/models/mmproj-model-f16-4B.gguf"
+            MODEL="/models/gemma-3-4b-it-q4_0_arm.gguf"
+            MMPROJ="/models/mmproj-model-f16-4B.gguf"
             MODEL_URL="https://example.com/targetfile.txt"
             MMPROJ_URL="https://example.com/targetfile.txt"
             if [ ! -f "$MODEL" ]; then
@@ -46,7 +46,7 @@ spec:
         image: us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/llama-cpp/server:latest
         command: ["/bin/sh", "-c"]
         args: [
-          "/app/llama-server --model ~/models/gemma-3-4b-it-q4_0_arm.gguf --mmproj ~/models/mmproj-model-f16-4B.gguf --port 8000"
+          "/app/llama-server --model /models/gemma-3-4b-it-q4_0_arm.gguf --mmproj /models/mmproj-model-f16-4B.gguf --port 8000"
         ]
         resources:
           requests:
