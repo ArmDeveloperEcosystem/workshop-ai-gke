@@ -16,10 +16,10 @@ spec:
         kubernetes.io/arch: arm64
       containers:
       - name: llm
-        image: us-central1-docker.pkg.dev/arm-evangelism-dev/llm-cpu-env/arm:latest
+        image: us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique/llama-cpp-server:latest
         command: ["/bin/sh", "-c"]
         args: [
-          "llama-server -m ~/models/model.gguf --port 8080"
+          "/app/llama-server --model ~/models/gemma-3-4b-it-q4_0_arm.gguf --mmproj ~/models/mmproj-model-f16-4B.gguf --port 8000"
         ]
         resources:
           requests:
