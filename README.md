@@ -115,6 +115,8 @@ Using Llama.cpp CLI image we just built, optimize it for Axion architecture
 sudo docker run -v ./models:/app/models ${DOCKER_IMAGE} --quantize --allow-requantize /app/models/gemma-3-4b-it-q4_0.gguf /app/models/gemma-3-4b-it-q4_0_arm.gguf Q4_0
 </ql-code-block>
 
+### Test quantized model
+
 Test run the model using the llama-cpp-server docker image:
 
 <ql-code-block templated bash>
@@ -154,6 +156,10 @@ sudo docker container logs <container_id> --since 10m
 
 TODO Michael: Make sure file path is correct to be able to easily copy files into pod running server
 
+### Push image to artifact repository
+
+TODO Michael: This section isn't needed, as we will provide images. But for reference:
+
 <ql-code-block templated bash>
 ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
 
@@ -162,17 +168,16 @@ gcloud auth configure-docker us-east4-docker.pkg.dev
 sudo docker push ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
 </ql-code-block>
 
-Download the quantized models from your VM to your normal development environment.
+### Download quantized model
 
-Get out of the ssh with `exit`:
+TODO Michael: This section isn't needed, as we will provide files. But for reference:
+
+To download the quantized models from your VM to your normal development environment:
+
+Get out of the ssh with `exit`, then copy the model files to your local machine:
 
 <ql-code-block templated bash>
 exit
-</ql-code-block>
-
-then copy the model files to your local machine:
-
-<ql-code-block templated bash>
 gcloud compute scp --recurse <VM NAME>:~/models/ ./models/
 </ql-code-block>
 
@@ -207,6 +212,8 @@ kubectl apply -f server/k8s/pvc.yml
 </ql-code-block>
 
 ### Upload model to Kubernetes
+
+TODO Avin: Remove this section as it is not needed with initcontainer
 
 Now we need to load our model files into the persistent storage we just created in our GKE.
 

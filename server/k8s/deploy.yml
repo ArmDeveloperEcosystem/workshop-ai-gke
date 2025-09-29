@@ -14,6 +14,33 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/arch: arm64
+      initContainers:
+      - name: ensure-files
+        image: busybox
+        command:
+          - /bin/sh
+          - -c
+          - |
+            set -e
+            MODEL="~/models/gemma-3-4b-it-q4_0_arm.gguf"
+            MMPROJ="~/models/mmproj-model-f16-4B.gguf"
+            MODEL_URL="https://example.com/targetfile.txt"
+            MMPROJ_URL="https://example.com/targetfile.txt"
+            if [ ! -f "$MODEL" ]; then
+              echo "Model not found. Downloading..."
+              wget -O "$MODEL" "$MODEL_URL"
+            else
+              echo "Model already present."
+            fi
+            if [ ! -f "$MMPROJ" ]; then
+              echo "mmproj not found. Downloading..."
+              wget -O "$MMPROJ" "$MMPROJ_URL"
+            else
+              echo "mmproj already present."
+            fi
+        volumeMounts:
+          - name: model-storage
+            mountPath: /models
       containers:
       - name: llm
         image: us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/llama-cpp/server:latest
