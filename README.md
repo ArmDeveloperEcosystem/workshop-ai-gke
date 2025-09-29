@@ -152,7 +152,6 @@ You can see the Llama.cpp logs with the following command:
 sudo docker container logs <container_id> --since 10m
 </ql-code-block>
 
-
 TODO Michael: Make sure file path is correct to be able to easily copy files into pod running server
 
 <ql-code-block templated bash>
@@ -161,6 +160,20 @@ ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
 sudo docker tag ${DOCKER_IMAGE}-server ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
 gcloud auth configure-docker us-east4-docker.pkg.dev
 sudo docker push ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
+</ql-code-block>
+
+Download the quantized models from your VM to your normal development environment.
+
+Get out of the ssh with `exit`:
+
+<ql-code-block templated bash>
+exit
+</ql-code-block>
+
+then copy the model files to your local machine:
+
+<ql-code-block templated bash>
+gcloud compute scp --recurse <VM NAME>:~/models/ ./models/
 </ql-code-block>
 
 ## 3. Deploy Llama.cpp kubernetes
@@ -193,6 +206,30 @@ Deploy it after defining the storage class:
 kubectl apply -f server/k8s/pvc.yml
 </ql-code-block>
 
+### Upload model to Kubernetes
+
+Now we need to load our model files into the persistent storage we just created in our GKE.
+
+We will make a basic pod that mounts our persistent storage. Since the storage will be shared by all pods that mount it, we can copy our local model file into our kubernetes cluster through this temporary pod.
+
+<ql-code-block templated bash>
+kubectl apply -f server/k8s/temp-loader.yml
+</ql-code-block>
+
+Now we need to copy the file:
+
+<ql-code-block templated bash>
+kubectl cp ./models/ temp-loader-pod:/models/
+</ql-code-block>
+
+Ensure your paths are correct. Give it a minute for the command to upload the file, this may take a moment due to size.
+
+Once the folder is updated successfully, we no longer want our temporary pod.
+
+<ql-code-block templated bash>
+kubectl delete -f server/k8s/temp-loader.yml
+</ql-code-block>
+
 ### Deploy service
 
 Now it's time to deploy our service and pod for the server, using a publicly available version of the image we made earlier.
@@ -203,22 +240,6 @@ kubectl apply -f server/k8s/deploy.yml
 
 TODO AVIN: Explain this further
 TODO MICHAEL: Confirm server arguments, where model file(s) need to be.
-
-### Deploy model file
-
-Now we need to load our model files into the persistent storage in our GKE.
-
-Since we already deployed our service, we can get the name of the pod and copy the files directly into the storage. This storage will be shared by all pods as things scale or restart.
-
-<ql-code-block templated bash>
-kubectl cp ./models/ llm-server:/models/
-</ql-code-block>
-
-TODO AVIN: Ensure pod name and file paths are correct here
-
-Ensure your paths are correct. Give it a minute for the command to upload the file, this may take a moment due to size.
-
-Once the file is updated successfully, we may need to restart the pod.
 
 ## 4. Test AI
 
