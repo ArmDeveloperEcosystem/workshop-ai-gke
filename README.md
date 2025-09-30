@@ -264,6 +264,8 @@ Once the folder is updated successfully, the initContainer should resolve itself
 
 ## 5. Test AI
 
+TODO Michael: Find a sample image and put it in a publicly available url?
+
 Let's run a curl command on our pod and double check everything works:
 
 ```bash
