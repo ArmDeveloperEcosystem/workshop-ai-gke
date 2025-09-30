@@ -28,13 +28,15 @@ spec:
             MMPROJ_URL="https://example.com/targetfile.txt"
             if [ ! -f "$MODEL" ]; then
               echo "Model not found. Downloading..."
-              wget -O "$MODEL" "$MODEL_URL"
+              # TODO Avin/Michael: replace with actual model URL
+              # wget -O "$MODEL" "$MODEL_URL"
             else
               echo "Model already present."
             fi
             if [ ! -f "$MMPROJ" ]; then
               echo "mmproj not found. Downloading..."
-              wget -O "$MMPROJ" "$MMPROJ_URL"
+              # TODO Avin/Michael: replace with actual model URL
+              # wget -O "$MMPROJ" "$MMPROJ_URL"
             else
               echo "mmproj already present."
             fi
