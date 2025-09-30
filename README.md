@@ -67,10 +67,17 @@ gcloud compute instances create "$INSTANCE_NAME" \
 
 ### Connect to build VM
 
-TODO MICHAEL: Copy Dockerfile to the new instance
+First we need to copy our build files to the VM instance:
 
 <ql-code-block templated bash>
-gcloud compute ssh $INSTANCE_NAME --zone $ZONE 
+gcloud compute scp --recurse ./server/ $INSTANCE_NAME:./server/
+gcloud compute scp --recurse ./shoppingassistantservice/ $INSTANCE_NAME:./shoppingassistantservice/
+</ql-code-block>
+
+Now we can connect to the VM
+
+<ql-code-block templated bash>
+gcloud compute ssh $INSTANCE_NAME --zone $ZONE
 </ql-code-block>
 
 ## 2. Prepare Llama.cpp
@@ -83,6 +90,7 @@ Build from docker file in that repo (Should build both full and Server images fr
 sudo snap install docker
 
 export DOCKER_IMAGE="llama-cpp"
+cd server/
 sudo docker buildx build -f Dockerfile --target full --tag ${DOCKER_IMAGE}:latest .
 sudo docker buildx build -f Dockerfile --target server --tag ${DOCKER_IMAGE}-server:latest .
 </ql-code-block>
@@ -90,6 +98,18 @@ sudo docker buildx build -f Dockerfile --target server --tag ${DOCKER_IMAGE}-ser
 Upload JUST THE SERVER image to Google Artifact Registry
 
 Make an image from docker template to be included in this repo, using command that ensures it makes an arm64 ONLY build
+
+### Push llm server image to artifact repository
+
+TODO Michael: This section isn't needed, as we will provide images. But for reference:
+
+<ql-code-block templated bash>
+ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
+
+sudo docker tag ${DOCKER_IMAGE}-server ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
+gcloud auth configure-docker us-east4-docker.pkg.dev
+sudo docker push ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
+</ql-code-block>
 
 ## 3. Prepare Model
 
@@ -114,6 +134,8 @@ Using Llama.cpp CLI image we just built, optimize it for Axion architecture
 <ql-code-block templated bash>
 sudo docker run -v ./models:/app/models ${DOCKER_IMAGE} --quantize --allow-requantize /app/models/gemma-3-4b-it-q4_0.gguf /app/models/gemma-3-4b-it-q4_0_arm.gguf Q4_0
 </ql-code-block>
+
+### Test quantized model
 
 Test run the model using the llama-cpp-server docker image:
 
@@ -152,20 +174,51 @@ You can see the Llama.cpp logs with the following command:
 sudo docker container logs <container_id> --since 10m
 </ql-code-block>
 
-
 TODO Michael: Make sure file path is correct to be able to easily copy files into pod running server
+
+### Download quantized model
+
+To download the quantized models from your VM to your normal development environment:
+
+Get out of the ssh with `exit`, then copy the model files to your local machine:
+
+<ql-code-block templated bash>
+exit
+gcloud compute scp --recurse $INSTANCE_NAME:~/models/ ./models/
+</ql-code-block>
+
+`$INSTANCE_NAME` is the name of the virtual machine we were just working in.
+
+TODO Michael: Add alternate instructions to download from qwiklab storage?
+
+## 3. Prepare Shopping Assistant
+
+TODO MICHAEL: Finalize code to remove hard coded database
+
+Now we need to build the shoppingassistantserver. Navigate to the folder we uploaded previously and build the docker image:
+
+<ql-code-block templated bash>
+cd shoppingassistantservice/src/
+sudo docker buildx build -f Dockerfile --tag shoppingassistantservice:latest .
+</ql-code-block>
+
+### Push shopping assistant image to artifact repository
+
+TODO Michael: This section isn't needed, as we will provide images. But for reference:
 
 <ql-code-block templated bash>
 ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
 
-sudo docker tag ${DOCKER_IMAGE}-server ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
+sudo docker tag shoppingassistantservice ${ARTIFACT_REGISTRY}/shoppingassistantservice
 gcloud auth configure-docker us-east4-docker.pkg.dev
-sudo docker push ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
+sudo docker push ${ARTIFACT_REGISTRY}/shoppingassistantservice
 </ql-code-block>
 
-## 3. Deploy Llama.cpp kubernetes
+## 4. Deploy Llama.cpp kubernetes
 
 Now it is time to deploy our server to our Kubernetes cluster.
+
+Leave the VM we were working in before using `exit` and get back to your console.
 
 ### Storage
 
@@ -195,32 +248,31 @@ kubectl apply -f server/k8s/pvc.yml
 
 ### Deploy service
 
-Now it's time to deploy our service and pod for the server, using a publicly available version of the image we made earlier.
+Now it's time to deploy our service and pod for the server.
 
 <ql-code-block templated bash>
 kubectl apply -f server/k8s/deploy.yml
 </ql-code-block>
 
-TODO AVIN: Explain this further
+This will create an initial container that waits until the model files are uploaded, and then will run our llama.cpp server using an image just like the one we built earlier.
+
 TODO MICHAEL: Confirm server arguments, where model file(s) need to be.
 
-### Deploy model file
+### Upload model to Kubernetes
 
-Now we need to load our model files into the persistent storage in our GKE.
+Now we need to load our model files into the persistent storage we just created in our GKE.
 
-Since we already deployed our service, we can get the name of the pod and copy the files directly into the storage. This storage will be shared by all pods as things scale or restart.
+We need to copy our model files into the `ensure-files` initContainer. Since the storage will be shared by all pods that mount it, once we copy the file in it will be accessible by our `llm` container.
 
 <ql-code-block templated bash>
-kubectl cp ./models/ llm-server:/models/
+kubectl cp ./models/ temp-loader-pod:/ -c ensure-files --disable-compression
 </ql-code-block>
-
-TODO AVIN: Ensure pod name and file paths are correct here
 
 Ensure your paths are correct. Give it a minute for the command to upload the file, this may take a moment due to size.
 
-Once the file is updated successfully, we may need to restart the pod.
+Once the folder is updated successfully, the initContainer should resolve itself and automatically start the server.
 
-## 4. Test AI
+## 5. Test AI
 
 TODO MICHAEL: Run a curl command and make sure it works
 
@@ -241,11 +293,9 @@ kubectl exec llm-server -- curl -X POST "http://localhost:8000/v1/chat/completio
   }'
 ```
 
-## 5. Prepare Shopping Assistant
+## 6. Deploy Shopping Assistant
 
-TODO MICHAEL: Finalize code to remove hard coded database
-
-TODO AVIN: Explain how to make an image for shopping assistant based on files in this repo
+This will create the deployment and service in your cluster for the Shopping Assistant we built earlier.
 
 Before deploying the Shopping Assistant service, you need to update the configuration to point to your running Llama.cpp server.
 
@@ -264,25 +314,23 @@ Look for the `EXTERNAL-IP` column in the output. Use this IP address in the next
 Open `shoppingassistantservice/k8s/shoppingassistantservice.yaml` and locate line 54:
 
 ```yaml
-    value: "http://100.26.35.143:8000"
+    value: "http://<internal IP of llm-server>:8000"
 ```
 
-Replace `100.26.35.143` with the external IP address of your deployed `llm-server` service.
+Replace `<internal IP of llm-server>` with the IP address of your deployed `llm-server` service. Make sure to keep the `:8000` part!
 
 ### Deploy the Shopping Assistant Service
-
-## 6. Deploy Shopping Assistant
 
 Once everything is updated, apply the Kubernetes manifest:
 
 ```bash
-kubectl apply -f shoppingassistantservice/k8s/shoppingassistantservice.yaml
+kubectl apply -k shoppingassistantservice/k8s/
 ```
-
-This will create the deployment and service for the Shopping Assistant in your cluster.
 
 ## 7. Test
 
 TODO MICHAEL: fill out section
+
+`http://<External IP>/assistant`
 
 Make sure it works!

@@ -51,7 +51,7 @@ spec:
           containerPort: 8080
         env:
         - name: OPENAI_API_BASE
-          value: "http://100.26.35.143:8000"
+          value: "http://<internal IP of llm-server>:8000"
         resources:
           requests:
             cpu: 100m

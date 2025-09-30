@@ -1,8 +1,3 @@
 flask==3.1.2
 langchain==0.3.27
 pillow==11.3.0
-
-# Generate a requirements text file using pip-compile with Python 3.11 by the following command:
-#
-#    pip-compile --cert=None --client-cert=None --index-url=None --output-file=requirements.txt --pip-args=None requirements.in
-#
