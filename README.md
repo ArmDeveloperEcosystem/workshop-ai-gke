@@ -91,6 +91,18 @@ Upload JUST THE SERVER image to Google Artifact Registry
 
 Make an image from docker template to be included in this repo, using command that ensures it makes an arm64 ONLY build
 
+### Push llm server image to artifact repository
+
+TODO Michael: This section isn't needed, as we will provide images. But for reference:
+
+<ql-code-block templated bash>
+ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
+
+sudo docker tag ${DOCKER_IMAGE}-server ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
+gcloud auth configure-docker us-east4-docker.pkg.dev
+sudo docker push ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
+</ql-code-block>
+
 ## 3. Prepare Model
 
 TODO MICHAEL: Simplify things by downloading directly to ./models/ instead of HF cache
@@ -156,18 +168,6 @@ sudo docker container logs <container_id> --since 10m
 
 TODO Michael: Make sure file path is correct to be able to easily copy files into pod running server
 
-### Push image to artifact repository
-
-TODO Michael: This section isn't needed, as we will provide images. But for reference:
-
-<ql-code-block templated bash>
-ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
-
-sudo docker tag ${DOCKER_IMAGE}-server ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
-gcloud auth configure-docker us-east4-docker.pkg.dev
-sudo docker push ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
-</ql-code-block>
-
 ### Download quantized model
 
 TODO Michael: This section isn't needed, as we will provide files. But for reference:
@@ -181,9 +181,31 @@ exit
 gcloud compute scp --recurse <VM NAME>:~/models/ ./models/
 </ql-code-block>
 
-## 3. Deploy Llama.cpp kubernetes
+## 3. Prepare Shopping Assistant
+
+TODO MICHAEL: Finalize code to remove hard coded database
+
+TODO AVIN: Explain how to make an image for shopping assistant based on files in this repo
+
+Before deploying the Shopping Assistant service, you need to update the configuration to point to your running Llama.cpp server.
+
+### Push shopping assistant image to artifact repository
+
+TODO Michael: This section isn't needed, as we will provide images. But for reference:
+
+<ql-code-block templated bash>
+ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
+
+sudo docker tag shoppingassistant ${ARTIFACT_REGISTRY}/shoppingassistant
+gcloud auth configure-docker us-east4-docker.pkg.dev
+sudo docker push ${ARTIFACT_REGISTRY}/shoppingassistant
+</ql-code-block>
+
+## 4. Deploy Llama.cpp kubernetes
 
 Now it is time to deploy our server to our Kubernetes cluster.
+
+Leave the VM we were working in before using `exit` and get back to your console.
 
 ### Storage
 
@@ -248,7 +270,7 @@ kubectl apply -f server/k8s/deploy.yml
 TODO AVIN: Explain this further
 TODO MICHAEL: Confirm server arguments, where model file(s) need to be.
 
-## 4. Test AI
+## 5. Test AI
 
 TODO MICHAEL: Run a curl command and make sure it works
 
@@ -269,13 +291,9 @@ kubectl exec llm-server -- curl -X POST "http://localhost:8000/v1/chat/completio
   }'
 ```
 
-## 5. Prepare Shopping Assistant
+## 6. Deploy Shopping Assistant
 
-TODO MICHAEL: Finalize code to remove hard coded database
-
-TODO AVIN: Explain how to make an image for shopping assistant based on files in this repo
-
-Before deploying the Shopping Assistant service, you need to update the configuration to point to your running Llama.cpp server.
+This will create the deployment and service in your cluster for the Shopping Assistant we built earlier.
 
 ### Find the LLM Server Load Balancer IP**
 
@@ -292,25 +310,23 @@ Look for the `EXTERNAL-IP` column in the output. Use this IP address in the next
 Open `shoppingassistantservice/k8s/shoppingassistantservice.yaml` and locate line 54:
 
 ```yaml
-    value: "http://100.26.35.143:8000"
+    value: "http://<internal IP of llm-server>:8000"
 ```
 
-Replace `100.26.35.143` with the external IP address of your deployed `llm-server` service.
+Replace `<internal IP of llm-server>` with the IP address of your deployed `llm-server` service. Make sure to keep the `:8000` part!
 
 ### Deploy the Shopping Assistant Service
-
-## 6. Deploy Shopping Assistant
 
 Once everything is updated, apply the Kubernetes manifest:
 
 ```bash
-kubectl apply -f shoppingassistantservice/k8s/shoppingassistantservice.yaml
+kubectl apply -k shoppingassistantservice/k8s/
 ```
-
-This will create the deployment and service for the Shopping Assistant in your cluster.
 
 ## 7. Test
 
 TODO MICHAEL: fill out section
+
+`http://<External IP>/assistant`
 
 Make sure it works!
