@@ -268,7 +268,7 @@ TODO Michael: Find a sample image and put it in a publicly available url?
 
 Let's run a curl command on our pod and double check everything works:
 
-```bash
+<ql-code-block templated bash>
 kubectl exec llm-server -- curl -X POST "http://localhost:8000/v1/chat/completions" \
   -H "Content-Type: application/json" \
   --data '{
@@ -290,7 +290,7 @@ kubectl exec llm-server -- curl -X POST "http://localhost:8000/v1/chat/completio
 			}
 		]
 	}'
-```
+</ql-code-block>
 
 We should get a json response that looks like it answers the question.
 
@@ -302,16 +302,48 @@ This container will connect to our already deployed and working `llm-server` ser
 
 Apply the Kubernetes kustomization to update our project to use the shoppingassistantservice:
 
-```bash
+<ql-code-block templated bash>
 kubectl apply -k shoppingassistantservice/k8s/
-```
+</ql-code-block>
 
 TODO Avin: Change image addresses used in this readme and in the deploy and shoppingassistantservice kubernetes files to the "known good" images we want to use
 
-## 7. Test
+## 7. Test the Shopping Assistant Application
 
-TODO Avin: fill out section
+Everything should be working! Let's try it out.
 
-`http://<External IP>/assistant`
+### Find the External IP
 
-Make sure it works!
+To access the Shopping Assistant, first retrieve the external IP address of the `shoppingassistantservice`:
+
+<ql-code-block templated bash>
+kubectl get svc frontend-external
+</ql-code-block>
+
+Look for the `EXTERNAL-IP` column in the output. Once you have the IP, open your browser and go to:
+
+<ql-code-block templated bash>
+http://<External IP>/assistant
+</ql-code-block>
+
+### 2. Interact with the Assistant
+
+You will see the chat interface as shown below:
+
+![Shopping Assistant Chat Interface](screenshots/assistant.png)
+
+Here, you can upload an image and type a question related to the image or the product catalog. For example, you might upload a photo of your kitchen and ask for a recommendation.
+
+### 3. Example Response
+
+After submitting your question, the assistant will analyze the image and your query, then respond with relevant information. An example response is shown below:
+
+![Shopping Assistant Response](screenshots/response.png)
+
+## Scalability with Arm and Google Kubernetes Engine
+
+This AI system is designed to be fully scalable for real-world production environments by leveraging the power of Arm-based CPUs and Google Kubernetes Engine (GKE). By containerizing the Llama.cpp server and Shopping Assistant service, you can easily deploy, manage, and scale these components across multiple nodes in your GKE cluster. Arm architecture provides cost-effective, energy-efficient compute resources, enabling you to handle increased workloads without sacrificing performance.
+
+GKE’s orchestration capabilities allow for automated scaling, rolling updates, and high availability, ensuring your AI application can respond to changing demand and maintain reliability. Persistent storage and artifact repositories further support seamless model management and deployment. With this architecture, you can confidently run large-scale AI workloads, optimize resource usage, and deliver robust services to end users.
+
+Thank you for participating in this workshop!
