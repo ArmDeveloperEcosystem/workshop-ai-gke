@@ -2,6 +2,8 @@
 
 A workshop for building out a AI application using Google Kubernetes Engine
 
+TODO Avin: Confirm final "known good" location of prebuilt llm-server and shoppingassistantservice docker images. Update the image locations throughout this document and in the two kubernetes deployment files.
+
 ## 0. Requirements
 
 This lab builds upon the previous example and assumes you already have a GKE cluster deployed running the [Online Boutique microservices demo application](https://github.com/GoogleCloudPlatform/microservices-demo).
@@ -305,8 +307,6 @@ Apply the Kubernetes kustomization to update our project to use the shoppingassi
 <ql-code-block templated bash>
 kubectl apply -k shoppingassistantservice/k8s/
 </ql-code-block>
-
-TODO Avin: Change image addresses used in this readme and in the deploy and shoppingassistantservice kubernetes files to the "known good" images we want to use
 
 ## 7. Test the Shopping Assistant Application
 
