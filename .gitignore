@@ -37,3 +37,6 @@ override.tf.json
 terraform.rc
 
 .DS_Store
+
+# Ignore models folder
+models/
