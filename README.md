@@ -194,6 +194,7 @@ TODO Michael: Add alternate instructions to download from qwiklab storage?
 ## 3. Prepare Shopping Assistant
 
 TODO MICHAEL: Finalize code to remove hard coded database
+TODO Michael: Make it so the assistant app doesn't crash when sending just text
 
 Now we need to build the shoppingassistantserver. Navigate to the folder we uploaded previously and build the docker image:
 
@@ -297,35 +298,15 @@ kubectl exec llm-server -- curl -X POST "http://localhost:8000/v1/chat/completio
 
 This will create the deployment and service in your cluster for the Shopping Assistant we built earlier.
 
-Before deploying the Shopping Assistant service, you need to update the configuration to point to your running Llama.cpp server.
+This container will connect to our already deployed and working `llm-server` service.
 
-### Find the LLM Server Load Balancer IP**
-
-To get the IP address of your llm service, run:
-
-```bash
-kubectl get svc llm-server
-```
-
-Look for the `EXTERNAL-IP` column in the output. Use this IP address in the next step.
-
-### Update the LLM Server Endpoint
-
-Open `shoppingassistantservice/k8s/shoppingassistantservice.yaml` and locate line 54:
-
-```yaml
-    value: "http://<internal IP of llm-server>:8000"
-```
-
-Replace `<internal IP of llm-server>` with the IP address of your deployed `llm-server` service. Make sure to keep the `:8000` part!
-
-### Deploy the Shopping Assistant Service
-
-Once everything is updated, apply the Kubernetes manifest:
+Apply the Kubernetes kustomization to update our project to use the shoppingassistantservice:
 
 ```bash
 kubectl apply -k shoppingassistantservice/k8s/
 ```
+
+TODO Avin: Change image addresses used in this readme and in the deploy and shoppingassistantservice kubernetes files to the "known good" images we want to use
 
 ## 7. Test
 
