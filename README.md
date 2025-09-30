@@ -248,8 +248,6 @@ kubectl apply -f server/k8s/deploy.yml
 
 This will create an initial container that waits until the model files are uploaded, and then will run our llama.cpp server using an image just like the one we built earlier.
 
-TODO MICHAEL: Confirm server arguments, where model file(s) need to be.
-
 ### Upload model to Kubernetes
 
 Now we need to load our model files into the persistent storage we just created in our GKE.
