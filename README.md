@@ -233,42 +233,31 @@ Deploy it after defining the storage class:
 kubectl apply -f server/k8s/pvc.yml
 </ql-code-block>
 
-### Upload model to Kubernetes
-
-TODO Avin: Remove this section as it is not needed with initcontainer
-
-Now we need to load our model files into the persistent storage we just created in our GKE.
-
-We will make a basic pod that mounts our persistent storage. Since the storage will be shared by all pods that mount it, we can copy our local model file into our kubernetes cluster through this temporary pod.
-
-<ql-code-block templated bash>
-kubectl apply -f server/k8s/temp-loader.yml
-</ql-code-block>
-
-Now we need to copy the file:
-
-<ql-code-block templated bash>
-kubectl cp ./models/ temp-loader-pod:/ --disable-compression
-</ql-code-block>
-
-Ensure your paths are correct. Give it a minute for the command to upload the file, this may take a moment due to size.
-
-Once the folder is updated successfully, we no longer want our temporary pod.
-
-<ql-code-block templated bash>
-kubectl delete -f server/k8s/temp-loader.yml
-</ql-code-block>
-
 ### Deploy service
 
-Now it's time to deploy our service and pod for the server, using a publicly available version of the image we made earlier.
+Now it's time to deploy our service and pod for the server.
 
 <ql-code-block templated bash>
 kubectl apply -f server/k8s/deploy.yml
 </ql-code-block>
 
-TODO AVIN: Explain this further
+This will create an initial container that waits until the model files are uploaded, and then will run our llama.cpp server using an image just like the one we built earlier.
+
 TODO MICHAEL: Confirm server arguments, where model file(s) need to be.
+
+### Upload model to Kubernetes
+
+Now we need to load our model files into the persistent storage we just created in our GKE.
+
+We need to copy our model files into the `ensure-files` initContainer. Since the storage will be shared by all pods that mount it, once we copy the file in it will be accessible by our `llm` container.
+
+<ql-code-block templated bash>
+kubectl cp ./models/ temp-loader-pod:/ -c ensure-files --disable-compression
+</ql-code-block>
+
+Ensure your paths are correct. Give it a minute for the command to upload the file, this may take a moment due to size.
+
+Once the folder is updated successfully, the initContainer should resolve itself and automatically start the server.
 
 ## 5. Test AI
 

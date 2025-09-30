@@ -24,22 +24,18 @@ spec:
             set -e
             MODEL="/models/gemma-3-4b-it-q4_0_arm.gguf"
             MMPROJ="/models/mmproj-model-f16-4B.gguf"
-            MODEL_URL="https://example.com/targetfile.txt"
-            MMPROJ_URL="https://example.com/targetfile.txt"
-            if [ ! -f "$MODEL" ]; then
-              echo "Model not found. Downloading..."
-              # TODO Avin/Michael: replace with actual model URL
-              # wget -O "$MODEL" "$MODEL_URL"
-            else
-              echo "Model already present."
-            fi
-            if [ ! -f "$MMPROJ" ]; then
-              echo "mmproj not found. Downloading..."
-              # TODO Avin/Michael: replace with actual model URL
-              # wget -O "$MMPROJ" "$MMPROJ_URL"
-            else
-              echo "mmproj already present."
-            fi
+
+            while [ ! -f "$MODEL" ] || [ ! -f "$MMPROJ" ]; do
+              if [ ! -f "$MODEL" ]; then
+                echo "Waiting for model file: $MODEL"
+              fi
+              if [ ! -f "$MMPROJ" ]; then
+                echo "Waiting for mmproj file: $MMPROJ"
+              fi
+              sleep 5
+            done
+
+            echo "Both files are present."
         volumeMounts:
           - name: model-storage
             mountPath: /models
