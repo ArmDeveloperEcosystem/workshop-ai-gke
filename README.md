@@ -18,12 +18,9 @@ To do that, we'll first create a VM in Google Cloud on an Axion instance to use 
 
 ### Create build environment VM
 
-Get a Virtual Machine running Axion that we can work in
+Get a Virtual Machine running Axion that we can work in.
 
-TODO MICHAEL: Find out how to inject GCP environment variables into this script
-TODO MICHAEL: Verify that the c4a-standard-16 and 20GB disk is enough to build and test-run llama.cpp
-
-(THIS MAY ALREADY BE PART OF FIRST WORKSHOP?)
+TODO Michael: Determine if attendees shouldn't do this because it'll be part of terraform
 
 <ql-code-block templated bash>
 
@@ -82,8 +79,6 @@ gcloud compute ssh $INSTANCE_NAME --zone $ZONE
 
 ## 2. Prepare Llama.cpp
 
-TODO MICHAEL: Write section about making llama cpp image
-
 Build from docker file in that repo (Should build both full and Server images from one docker file)
 
 <ql-code-block templated bash>
@@ -95,13 +90,13 @@ sudo docker buildx build -f Dockerfile --target full --tag ${DOCKER_IMAGE}:lates
 sudo docker buildx build -f Dockerfile --target server --tag ${DOCKER_IMAGE}-server:latest .
 </ql-code-block>
 
-Upload JUST THE SERVER image to Google Artifact Registry
-
 Make an image from docker template to be included in this repo, using command that ensures it makes an arm64 ONLY build
 
 ### Push llm server image to artifact repository
 
 TODO Michael: This section isn't needed, as we will provide images. But for reference:
+
+We want to upload just the server image into our GCP Project's Artifact Registry.
 
 <ql-code-block templated bash>
 ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
@@ -112,8 +107,6 @@ sudo docker push ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
 </ql-code-block>
 
 ## 3. Prepare Model
-
-TODO MICHAEL: Simplify things by downloading directly to ./models/ instead of HF cache
 
 Get a hugging face token and save it for this step
 Download locally `google/gemma-3-4b-it` using Hugging Face.
@@ -169,12 +162,12 @@ curl -X POST "http://localhost:8000/v1/chat/completions" \
 	}'
 </ql-code-block>
 
+There should be a json response within a minute or so that looks like it answers the question.
+
 You can see the Llama.cpp logs with the following command:
 <ql-code-block templated bash>
 sudo docker container logs <container_id> --since 10m
 </ql-code-block>
-
-TODO Michael: Make sure file path is correct to be able to easily copy files into pod running server
 
 ### Download quantized model
 
@@ -188,8 +181,6 @@ gcloud compute scp --recurse $INSTANCE_NAME:~/models/ ./models/
 </ql-code-block>
 
 `$INSTANCE_NAME` is the name of the virtual machine we were just working in.
-
-TODO Michael: Add alternate instructions to download from qwiklab storage?
 
 ## 3. Prepare Shopping Assistant
 
@@ -275,24 +266,33 @@ Once the folder is updated successfully, the initContainer should resolve itself
 
 ## 5. Test AI
 
-TODO MICHAEL: Run a curl command and make sure it works
+Let's run a curl command on our pod and double check everything works:
 
 ```bash
 kubectl exec llm-server -- curl -X POST "http://localhost:8000/v1/chat/completions" \
   -H "Content-Type: application/json" \
   --data '{
-  "model": "google/gemma-3-4b-it",
-    "messages": [
-    {
-        "role": "user",
-        "content": [
-        {
-            "type": "text",
-            "text": "Describe what a pizza is."
-        }]
-    }]
-  }'
+		"messages": [
+			{
+				"role": "user",
+				"content": [
+					{
+						"type": "text",
+						"text": "Describe this image in one sentence."
+					},
+					{
+						"type": "image_url",
+						"image_url": {
+							"url": "https://cdn.britannica.com/61/93061-050-99147DCE/Statue-of-Liberty-Island-New-York-Bay.jpg"
+						}
+					}
+				]
+			}
+		]
+	}'
 ```
+
+We should get a json response that looks like it answers the question.
 
 ## 6. Deploy Shopping Assistant
 
@@ -310,7 +310,7 @@ TODO Avin: Change image addresses used in this readme and in the deploy and shop
 
 ## 7. Test
 
-TODO MICHAEL: fill out section
+TODO Avin: fill out section
 
 `http://<External IP>/assistant`
 
