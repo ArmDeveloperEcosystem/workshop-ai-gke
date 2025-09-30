@@ -67,10 +67,17 @@ gcloud compute instances create "$INSTANCE_NAME" \
 
 ### Connect to build VM
 
-TODO MICHAEL: Copy Dockerfile to the new instance
+First we need to copy our build files to the VM instance:
 
 <ql-code-block templated bash>
-gcloud compute ssh $INSTANCE_NAME --zone $ZONE 
+gcloud compute scp --recurse ./server/ $INSTANCE_NAME:./server/
+gcloud compute scp --recurse ./shoppingassistantservice/ $INSTANCE_NAME:./shoppingassistantservice/
+</ql-code-block>
+
+Now we can connect to the VM
+
+<ql-code-block templated bash>
+gcloud compute ssh $INSTANCE_NAME --zone $ZONE
 </ql-code-block>
 
 ## 2. Prepare Llama.cpp
@@ -83,6 +90,7 @@ Build from docker file in that repo (Should build both full and Server images fr
 sudo snap install docker
 
 export DOCKER_IMAGE="llama-cpp"
+cd server/
 sudo docker buildx build -f Dockerfile --target full --tag ${DOCKER_IMAGE}:latest .
 sudo docker buildx build -f Dockerfile --target server --tag ${DOCKER_IMAGE}-server:latest .
 </ql-code-block>
@@ -170,24 +178,29 @@ TODO Michael: Make sure file path is correct to be able to easily copy files int
 
 ### Download quantized model
 
-TODO Michael: This section isn't needed, as we will provide files. But for reference:
-
 To download the quantized models from your VM to your normal development environment:
 
 Get out of the ssh with `exit`, then copy the model files to your local machine:
 
 <ql-code-block templated bash>
 exit
-gcloud compute scp --recurse <VM NAME>:~/models/ ./models/
+gcloud compute scp --recurse $INSTANCE_NAME:~/models/ ./models/
 </ql-code-block>
+
+`$INSTANCE_NAME` is the name of the virtual machine we were just working in.
+
+TODO Michael: Add alternate instructions to download from qwiklab storage?
 
 ## 3. Prepare Shopping Assistant
 
 TODO MICHAEL: Finalize code to remove hard coded database
 
-TODO AVIN: Explain how to make an image for shopping assistant based on files in this repo
+Now we need to build the shoppingassistantserver. Navigate to the folder we uploaded previously and build the docker image:
 
-Before deploying the Shopping Assistant service, you need to update the configuration to point to your running Llama.cpp server.
+<ql-code-block templated bash>
+cd shoppingassistantservice/src/
+sudo docker buildx build -f Dockerfile --tag shoppingassistantservice:latest .
+</ql-code-block>
 
 ### Push shopping assistant image to artifact repository
 
@@ -196,9 +209,9 @@ TODO Michael: This section isn't needed, as we will provide images. But for refe
 <ql-code-block templated bash>
 ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
 
-sudo docker tag shoppingassistant ${ARTIFACT_REGISTRY}/shoppingassistant
+sudo docker tag shoppingassistantservice ${ARTIFACT_REGISTRY}/shoppingassistantservice
 gcloud auth configure-docker us-east4-docker.pkg.dev
-sudo docker push ${ARTIFACT_REGISTRY}/shoppingassistant
+sudo docker push ${ARTIFACT_REGISTRY}/shoppingassistantservice
 </ql-code-block>
 
 ## 4. Deploy Llama.cpp kubernetes
@@ -283,6 +296,8 @@ kubectl exec llm-server -- curl -X POST "http://localhost:8000/v1/chat/completio
 ## 6. Deploy Shopping Assistant
 
 This will create the deployment and service in your cluster for the Shopping Assistant we built earlier.
+
+Before deploying the Shopping Assistant service, you need to update the configuration to point to your running Llama.cpp server.
 
 ### Find the LLM Server Load Balancer IP**
 
