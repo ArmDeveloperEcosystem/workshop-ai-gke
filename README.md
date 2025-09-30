@@ -248,7 +248,7 @@ kubectl apply -f server/k8s/temp-loader.yml
 Now we need to copy the file:
 
 <ql-code-block templated bash>
-kubectl cp ./models/ temp-loader-pod:/
+kubectl cp ./models/ temp-loader-pod:/ --disable-compression
 </ql-code-block>
 
 Ensure your paths are correct. Give it a minute for the command to upload the file, this may take a moment due to size.
