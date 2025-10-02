@@ -93,11 +93,11 @@ Make an image from docker template to be included in this repo, using command th
 
 ### Push llm server image to artifact repository
 
-At this point we would upload the llama-cpp-server image into an artifact reppository. However, to speed things up, we have one already uploaded and ready to use.
+Now that we've built the `llama-cpp-server` image, at this point we would upload the llama-cpp-server image to our Google Cloud Artifact Registry. This makes the image available for deployment within our GKE cluster. By storing the image in the artifact repository, Kubernetes can pull it directly when creating pods for the shopping assistant service.
 
-Below is an example of how you would push your newly built docker image to GCP's Project Artifact Registry
+However, to speed things up, we have one already uploaded an image to use in later steps. For reference, the following commands are an example of how you would push your newly built docker image to GCP's Project Artifact Registry
 
-TODO Avin: Verify commands to push to student's registry in qwiklabs
+TODO Avin: Change to local artifact registry in qwiklabs (location and repo name)
 
 <ql-code-block templated bash>
 ARTIFACT_REGISTRY="us-docker.pkg.dev/scaling-llm-with-arm-and-gke"
@@ -194,9 +194,9 @@ sudo docker buildx build -f Dockerfile --tag shoppingassistantservice:latest .
 
 ### Push shopping assistant image to artifact repository
 
-TODO Avin: Verify commands to push to student's registry in qwiklabs
+Once again we will need the `shoppingassistantservice` image we just made to be in an Google Cloud Artifact Registry. We have already done so for later steps, but for reference if you'd like to push the image yourself use the following commands:
 
-TODO Michael: Expand on this section
+TODO Avin: Change to local artifact registry in qwiklabs (location and repo name)
 
 <ql-code-block templated bash>
 ARTIFACT_REGISTRY="us-docker.pkg.dev/scaling-llm-with-arm-and-gke"
