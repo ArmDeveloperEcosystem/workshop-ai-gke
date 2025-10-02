@@ -19,48 +19,20 @@ import os
 from urllib.parse import unquote
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from flask import Flask, request
 
 OPENAI_API_BASE = os.environ["OPENAI_API_BASE"]
+BASE_PATH = os.curdir#os.environ.get('HOME')
+VECTOR_DIR = os.path.join(BASE_PATH, "vector")
+vector_path = os.path.join(VECTOR_DIR, 'products')
 
-def create_app():
-    app = Flask(__name__)
-
-    @app.route("/", methods=['POST'])
-    def talkToGemma():
-        print("Beginning RAG call")
-        print("Using OpenAI API Base: " + OPENAI_API_BASE)
-        print("Using image: " + request.json['image'])
-        prompt = request.json['message']
-        prompt = unquote(prompt)
-
-        # Step 1 – Get a room description from Gemma
-        llm_vision = ChatOpenAI(
-            openai_api_base=OPENAI_API_BASE,
-            openai_api_key="no-api-key",
-            model="google/gemma-3-4b-it",
-            temperature=0,
-            max_tokens=None,
-            timeout=None,
-            max_retries=2,
-
-        )
-        message = HumanMessage(
-            content=[
-                {
-                    "type": "text",
-                    "text": "You are a professional interior designer, give me a detailed decsription of the style of the room in this image",
-                },
-                {"type": "image_url", "image_url": {"url": request.json['image']}},
-            ]
-        )
-        response = llm_vision.invoke([message])
-        print("Description step:")
-        print(response)
-        description_response = response.content
-
-        #Prepare relevant documents for inclusion in final prompt
-        relevant_docs = [
+# Ensure the products vector store exists
+def create_vectordb():
+    if (not os.path.exists(vector_path)):
+        print("Creating vector store at " + vector_path)
+        products_json = [
             {
                 "id": "OLJCESPC7Z",
                 "name": "Sunglasses",
@@ -170,6 +142,81 @@ def create_app():
                 "categories": ["kitchen"]
             }
         ]
+        embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base")
+        # embedding = OpenAIEmbeddings(
+        #     openai_api_base=OPENAI_API_BASE,
+        #     openai_api_key="no-api-key",
+        #     model="google/gemma-3-4b-it",
+        # )
+        vectorstore = FAISS.from_texts(texts=[str(p) for p in products_json], embedding=embedding)
+        vectorstore.save_local(vector_path)
+
+    
+def create_app():
+    app = Flask(__name__)
+
+    @app.route("/", methods=['POST'])
+    def talkToGemma():
+        print("Beginning RAG call")
+        print("Using OpenAI API Base: " + OPENAI_API_BASE)
+        prompt = request.json['message']
+        prompt = unquote(prompt)
+
+        # Step 1 – Get a room description from Gemma
+        try:
+            if (not request.json['image'] or request.json['image'] == "" or not request.json['image']['url'] or request.json['image']['url'] == ""):    
+                err = {'content': "Please provide an image of the room you would like to decorate."}
+                return err
+        except:
+            err = {'content': "Please provide an image of the room you would like to decorate."}
+            return err
+
+        llm_vision = ChatOpenAI(
+            openai_api_base=OPENAI_API_BASE,
+            openai_api_key="no-api-key",
+            model="google/gemma-3-4b-it",
+            temperature=0,
+            max_tokens=None,
+            timeout=None,
+            max_retries=2,
+
+        )
+        message = HumanMessage(
+            content=[
+                {
+                    "type": "text",
+                    "text": "You are a professional interior designer, give me a detailed decsription of the style of the room in this image",
+                },
+                {"type": "image_url", "image_url": request.json['image']},
+            ]
+        )
+        response = llm_vision.invoke([message])
+        print("Description step:")
+        print(response)
+        description_response = response.content
+
+
+        # Step 2 – Similarity search with the description & user prompt
+        vector_search_prompt = f""" This is the user's request: {prompt} Find the most relevant items for that prompt, while matching style of the room described here: {description_response} """
+        print(vector_search_prompt)
+
+        embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base")
+        # embedding = OpenAIEmbeddings(
+        #     openai_api_base=OPENAI_API_BASE,
+        #     openai_api_key="no-api-key",
+        #     model="google/gemma-3-4b-it",
+        # )
+        vectorstore = FAISS.load_local(vector_path, embedding, allow_dangerous_deserialization=True)
+        docs = vectorstore.similarity_search(vector_search_prompt)
+        print(f"Vector search: {description_response}")
+        print(f"Retrieved documents: {len(docs)}")
+        #Prepare relevant documents for inclusion in final prompt
+        relevant_docs = ""
+        for doc in docs:
+            doc_details = doc.page_content
+            print(f"Adding relevant document to prompt context: {doc_details}")
+            relevant_docs += str(doc_details) + ", "
+
 
         # Step 3 – Tie it all together by augmenting our call to Gemma-3-4b-it with the description and relevant products
         llm = ChatOpenAI(
@@ -184,7 +231,7 @@ def create_app():
         )
         design_prompt = (
             f" You are an interior designer that works for Online Boutique. You are tasked with providing recommendations to a customer on what they should add to a given room from our catalog. This is the description of the room: \n"
-            f"{description_response} Here are a list of products that are relevant to it: {relevant_docs} Specifically, this is what the customer has asked for, see if you can accommodate it: {prompt} Start by repeating a brief description of the room's design to the customer, then provide your recommendations. Do your best to pick the most relevant item out of the list of products provided, but if none of them seem relevant, then say that instead of inventing a new product. At the end of the response, add a list of the IDs of the relevant products in the following format for the top 3 results: [<first product ID>], [<pillowond product ID>], [<third product ID>] ")
+            f"{description_response} Here are a list of products that are relevant to it: {relevant_docs} Specifically, this is what the customer has asked for, see if you can accommodate it: {prompt} Start by repeating a brief description of the room's design to the customer, then provide your recommendations. Do your best to pick the most relevant item out of the list of products provided, but if none of them seem relevant, then say that instead of inventing a new product. At the end of the response, add a list of the IDs of the relevant products in the following format for the top 3 results: [<first product ID>], [<second product ID>], [<third product ID>] ")
         print("Final design prompt: ")
         print(design_prompt)
         design_response = llm.invoke(
@@ -198,5 +245,6 @@ def create_app():
 
 if __name__ == "__main__":
     # Create an instance of flask server when called directly
+    create_vectordb()
     app = create_app()
     app.run(host='0.0.0.0', port=8080)

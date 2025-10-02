@@ -48,6 +48,11 @@ langchain-core==0.3.76
     #   langchain-text-splitters
 langchain-text-splitters==0.3.11
     # via langchain
+langchain_community
+langchainhub
+faiss-cpu
+sentence-transformers
+    # via RAG LM
 langsmith==0.4.31
     # via
     #   langchain

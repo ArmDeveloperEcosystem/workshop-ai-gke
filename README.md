@@ -12,9 +12,7 @@ If you do not, please run the previous lab first and then return to this lab.
 
 ## 1. Prepare work environment
 
-TODO MICHAEL: Explain this
-
-We will be building Llama.cpp optimized specifically for Axion CPUs.
+In order to achieve the best performance, will be building Llama.cpp optimized specifically for Axion CPUs.
 
 To do that, we'll first create a VM in Google Cloud on an Axion instance to use as our build environment.
 
@@ -22,7 +20,7 @@ To do that, we'll first create a VM in Google Cloud on an Axion instance to use 
 
 Get a Virtual Machine running Axion that we can work in.
 
-TODO Michael: Determine if attendees shouldn't do this because it'll be part of terraform
+TODO Michael: Attendees shouldn't do this because it'll be part of terraform, leaving for now for reference but replace with with simple ssh once terraform is making the build VM
 
 <ql-code-block templated bash>
 
@@ -86,26 +84,27 @@ Build from docker file in that repo (Should build both full and Server images fr
 <ql-code-block templated bash>
 sudo snap install docker
 
-export DOCKER_IMAGE="llama-cpp"
 cd server/
-sudo docker buildx build -f Dockerfile --target full --tag ${DOCKER_IMAGE}:latest .
-sudo docker buildx build -f Dockerfile --target server --tag ${DOCKER_IMAGE}-server:latest .
+sudo docker buildx build -f Dockerfile --target full --tag llama-cpp:latest .
+sudo docker buildx build -f Dockerfile --target server --tag llama-cpp-server:latest .
 </ql-code-block>
 
 Make an image from docker template to be included in this repo, using command that ensures it makes an arm64 ONLY build
 
 ### Push llm server image to artifact repository
 
-TODO Michael: This section isn't needed, as we will provide images. But for reference:
+At this point we would upload the llama-cpp-server image into an artifact reppository. However, to speed things up, we have one already uploaded and ready to use.
 
-We want to upload just the server image into our GCP Project's Artifact Registry.
+Below is an example of how you would push your newly built docker image to GCP's Project Artifact Registry
+
+TODO Avin: Verify commands to push to student's registry in qwiklabs
 
 <ql-code-block templated bash>
-ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
+ARTIFACT_REGISTRY="us-docker.pkg.dev/scaling-llm-with-arm-and-gke"
 
-sudo docker tag ${DOCKER_IMAGE}-server ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
-gcloud auth configure-docker us-east4-docker.pkg.dev
-sudo docker push ${ARTIFACT_REGISTRY}/${DOCKER_IMAGE}-server
+sudo docker tag llama-cpp-server ${ARTIFACT_REGISTRY}/llama-cpp-server
+gcloud auth configure-docker us-docker.pkg.dev
+sudo docker push ${ARTIFACT_REGISTRY}/llama-cpp-server
 </ql-code-block>
 
 ## 3. Prepare Model
@@ -135,7 +134,7 @@ sudo docker run -v ./models:/app/models ${DOCKER_IMAGE} --quantize --allow-requa
 Test run the model using the llama-cpp-server docker image:
 
 <ql-code-block templated bash>
-sudo  docker run -v ./models:/app/models -p 8000:8000 ${DOCKER_IMAGE}-server --model /app/models/gemma-3-4b-it-q4_0_arm.gguf --mmproj /app/models/mmproj-model-f16-4B.gguf --port 8000 --host 0.0.0.0
+sudo  docker run -v ./models:/app/models -p 8000:8000 ${DOCKER_IMAGE}-server --model /app/models/gemma-3-4b-it-q4_0_arm.gguf --mmproj /app/models/mmproj-model-f16-4B.gguf --alias gemma-3-4b-it-arm --port 8000 --host 0.0.0.0
 </ql-code-block>
 
 Then, in another terminal, run:
@@ -155,7 +154,7 @@ curl -X POST "http://localhost:8000/v1/chat/completions" \
 					{
 						"type": "image_url",
 						"image_url": {
-							"url": "https://cdn.britannica.com/61/93061-050-99147DCE/Statue-of-Liberty-Island-New-York-Bay.jpg"
+							"url": "https://tile.loc.gov/storage-services/service/pnp/ppbd/00600/00631v.jpg"
 						}
 					}
 				]
@@ -186,9 +185,6 @@ gcloud compute scp --recurse $INSTANCE_NAME:~/models/ ./models/
 
 ## 3. Prepare Shopping Assistant
 
-TODO MICHAEL: Finalize code to remove hard coded database
-TODO Michael: Make it so the assistant app doesn't crash when sending just text
-
 Now we need to build the shoppingassistantserver. Navigate to the folder we uploaded previously and build the docker image:
 
 <ql-code-block templated bash>
@@ -198,13 +194,15 @@ sudo docker buildx build -f Dockerfile --tag shoppingassistantservice:latest .
 
 ### Push shopping assistant image to artifact repository
 
-TODO Michael: This section isn't needed, as we will provide images. But for reference:
+TODO Avin: Verify commands to push to student's registry in qwiklabs
+
+TODO Michael: Expand on this section
 
 <ql-code-block templated bash>
-ARTIFACT_REGISTRY="us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/boutique"
+ARTIFACT_REGISTRY="us-docker.pkg.dev/scaling-llm-with-arm-and-gke"
 
 sudo docker tag shoppingassistantservice ${ARTIFACT_REGISTRY}/shoppingassistantservice
-gcloud auth configure-docker us-east4-docker.pkg.dev
+gcloud auth configure-docker us-docker.pkg.dev
 sudo docker push ${ARTIFACT_REGISTRY}/shoppingassistantservice
 </ql-code-block>
 
@@ -266,8 +264,6 @@ Once the folder is updated successfully, the initContainer should resolve itself
 
 ## 5. Test AI
 
-TODO Michael: Find a sample image and put it in a publicly available url?
-
 Let's run a curl command on our pod and double check everything works:
 
 <ql-code-block templated bash>
@@ -285,7 +281,7 @@ kubectl exec llm-server -- curl -X POST "http://localhost:8000/v1/chat/completio
 					{
 						"type": "image_url",
 						"image_url": {
-							"url": "https://cdn.britannica.com/61/93061-050-99147DCE/Statue-of-Liberty-Island-New-York-Bay.jpg"
+							"url": "https://tile.loc.gov/storage-services/service/pnp/ppbd/00600/00631v.jpg"
 						}
 					}
 				]
