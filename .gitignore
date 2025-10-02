@@ -40,3 +40,6 @@ terraform.rc
 
 # Ignore models folder
 models/
+
+# Ignore vector store folder
+shoppingassistantservice/src/vector/
