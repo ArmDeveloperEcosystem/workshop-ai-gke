@@ -6,6 +6,7 @@ TODO Avin: Confirm final "known good" location of prebuilt llm-server and shoppi
 TODO Avin: Write a terraform file that deploys the previous workshop in ideal state (with artifact images prebuild in common artifact repo), as well as a VM the reader can work in.
 TODO Avin: Write a table of contents as per Google's preference.
 TODO Avin: Clarify downloading model and uploading to k8s is optional, then modifiy initcontainer to auto download
+TODO Avin: Get this markdown in the Google repo
 
 ## 0. Requirements
 
