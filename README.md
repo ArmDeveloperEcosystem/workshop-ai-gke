@@ -5,6 +5,7 @@ A workshop for building out a AI application using Google Kubernetes Engine
 TODO Avin: Confirm final "known good" location of prebuilt llm-server and shoppingassistantservice docker images. Update the image locations throughout this document and in the two kubernetes deployment files.
 TODO Avin: Write a terraform file that deploys the previous workshop in ideal state (with artifact images prebuild in common artifact repo), as well as a VM the reader can work in.
 TODO Avin: Write a table of contents as per Google's preference.
+TODO Avin: Clarify downloading model and uploading to k8s is optional, then modifiy initcontainer to auto download
 
 ## 0. Requirements
 
