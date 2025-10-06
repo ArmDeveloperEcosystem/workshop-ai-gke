@@ -2,10 +2,8 @@ ARG UBUNTU_VERSION=22.04
 
 FROM ubuntu:$UBUNTU_VERSION AS build
 
-ARG TARGETARCH
-
 RUN apt-get update && \
-    apt-get install -y build-essential git cmake libcurl4-openssl-dev git
+    apt-get install -y build-essential git cmake libcurl4-openssl-dev
 
 WORKDIR /app
 

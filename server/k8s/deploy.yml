@@ -41,7 +41,7 @@ spec:
             mountPath: /models
       containers:
       - name: llm
-        image: us-east4-docker.pkg.dev/arm-deveco-stedvsl-prd/llama-cpp/server:latest
+        image: us-docker.pkg.dev/qwiklabs-resources/scaling-llm-with-arm-and-gke/llama-cpp-server:latest
         command: ["/bin/sh", "-c"]
         args: [
           "/app/llama-server --model /models/gemma-3-4b-it-q4_0_arm.gguf --mmproj /models/mmproj-model-f16-4B.gguf --port 8000"
