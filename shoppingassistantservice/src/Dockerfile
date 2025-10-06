@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM --platform=$BUILDPLATFORM python:3.12.8-slim@sha256:123be5684f39d8476e64f47a5fddf38f5e9d839baff5c023c815ae5bdfae0df7 AS base
+FROM python:3.12.8-slim@sha256:123be5684f39d8476e64f47a5fddf38f5e9d839baff5c023c815ae5bdfae0df7 AS base
 
 FROM base AS builder
 
@@ -38,7 +38,7 @@ COPY --from=builder /usr/local/lib/python3.12/ /usr/local/lib/python3.12/
 COPY . .
 
 # set listen port
-ENV PORT "8080"
+ENV PORT=8080
 EXPOSE 8080
 
 ENTRYPOINT ["python", "shoppingassistantservice.py"]
