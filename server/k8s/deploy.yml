@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llm
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: llm
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      initContainers:
+      - name: ensure-files
+        image: busybox
+        command:
+          - /bin/sh
+          - -c
+          - |
+            set -e
+            MODEL="/models/gemma-3-4b-it-q4_0_arm.gguf"
+            MMPROJ="/models/mmproj-model-f16-4B.gguf"
+
+            while [ ! -f "$MODEL" ] || [ ! -f "$MMPROJ" ]; do
+              if [ ! -f "$MODEL" ]; then
+                echo "Waiting for model file: $MODEL"
+              fi
+              if [ ! -f "$MMPROJ" ]; then
+                echo "Waiting for mmproj file: $MMPROJ"
+              fi
+              sleep 5
+            done
+
+            echo "Both files are present."
+        volumeMounts:
+          - name: model-storage
+            mountPath: /models
+      containers:
+      - name: llm
+        image: us-docker.pkg.dev/qwiklabs-resources/scaling-llm-with-arm-and-gke/llama-cpp-server:latest
+        command: ["/bin/sh", "-c"]
+        args: [
+          "/app/llama-server --model /models/gemma-3-4b-it-q4_0_arm.gguf --mmproj /models/mmproj-model-f16-4B.gguf --port 8000"
+        ]
+        resources:
+          requests:
+            cpu: "1"
+            memory: "4Gi"
+          limits:
+            cpu: "15"
+            memory: "60Gi"
+        ports:
+          - containerPort: 8000
+        volumeMounts:
+          - name: model-storage
+            mountPath: /models
+        securityContext:
+          seccompProfile:
+            type: Unconfined
+          capabilities:
+            add:
+            - SYS_NICE
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: llm-models
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-server
+spec:
+  selector:
+    app.kubernetes.io/name: llm
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000
+  type: ClusterIP

@@ -35,3 +35,11 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+.DS_Store
+
+# Ignore models folder
+models/
+
+# Ignore vector store folder
+shoppingassistantservice/src/vector/
