@@ -35,16 +35,6 @@ spec:
               sleep 5
             done
 
-            while lsof "$MODEL" | grep -v "^COMMAND" | grep -v "^$" | grep "w"; do
-              echo "Model file is still being copied..."
-              sleep 5
-            done
-
-            while lsof "$MMPROJ" | grep -v "^COMMAND" | grep -v "^$" | grep "w"; do
-              echo "MMProj file is still being copied..."
-              sleep 5
-            done
-
             echo "Both files are present."
         volumeMounts:
           - name: model-storage
