@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: temp-loader-pod
+spec:
+  nodeSelector:
+    kubernetes.io/arch: arm64
+  containers:
+  - name: temp-loader-container
+    image: busybox
+    command: ["/bin/sh", "-c"]
+    args: ["echo 'Hello, Kubernetes!' && find /models && sleep 60s"]
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "16Gi"
+        cpu: "4000m"
+    volumeMounts:
+    - mountPath: /models
+      name: model-storage
+  volumes:
+  - name: model-storage
+    persistentVolumeClaim:
+      claimName: llm-models

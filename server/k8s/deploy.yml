@@ -14,31 +14,6 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/arch: arm64
-      initContainers:
-      - name: ensure-files
-        image: busybox
-        command:
-          - /bin/sh
-          - -c
-          - |
-            set -e
-            MODEL="/models/gemma-3-4b-it-q4_0_arm.gguf"
-            MMPROJ="/models/mmproj-model-f16-4B.gguf"
-
-            while [ ! -f "$MODEL" ] || [ ! -f "$MMPROJ" ]; do
-              if [ ! -f "$MODEL" ]; then
-                echo "Waiting for model file: $MODEL"
-              fi
-              if [ ! -f "$MMPROJ" ]; then
-                echo "Waiting for mmproj file: $MMPROJ"
-              fi
-              sleep 5
-            done
-
-            echo "Both files are present."
-        volumeMounts:
-          - name: model-storage
-            mountPath: /models
       containers:
       - name: llm
         image: us-docker.pkg.dev/qwiklabs-resources/scaling-llm-with-arm-and-gke/llama-cpp-server:latest
