@@ -35,12 +35,12 @@ spec:
               sleep 5
             done
 
-            while lsof "$MODEL" > /dev/null 2>&1; do
+            while lsof "$MODEL" | grep -v "^$(basename $0)" | grep -v "^COMMAND" | grep -v "^$" > /dev/null 2>&1; do
               echo "Model file is still being copied..."
               sleep 5
             done
 
-            while lsof "$MMPROJ" > /dev/null 2>&1; do
+            while lsof "$MMPROJ" | grep -v "^$(basename $0)" | grep -v "^COMMAND" | grep -v "^$" > /dev/null 2>&1; do
               echo "MMProj file is still being copied..."
               sleep 5
             done
