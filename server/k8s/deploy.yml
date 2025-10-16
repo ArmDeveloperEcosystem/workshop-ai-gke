@@ -35,6 +35,16 @@ spec:
               sleep 5
             done
 
+            while lsof "$MODEL" > /dev/null 2>&1; do
+              echo "Model file is still being copied..."
+              sleep 5
+            done
+
+            while lsof "$MMPROJ" > /dev/null 2>&1; do
+              echo "MMProj file is still being copied..."
+              sleep 5
+            done
+
             echo "Both files are present."
         volumeMounts:
           - name: model-storage
