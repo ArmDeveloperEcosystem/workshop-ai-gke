@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+import os, sys
 
 from urllib.parse import unquote
 from langchain_core.messages import HumanMessage
@@ -23,10 +23,10 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from flask import Flask, request
 
-OPENAI_API_BASE = os.environ["OPENAI_API_BASE"]
 BASE_PATH = os.curdir#os.environ.get('HOME')
 VECTOR_DIR = os.path.join(BASE_PATH, "vector")
 vector_path = os.path.join(VECTOR_DIR, 'products')
+model_path = os.path.join(VECTOR_DIR, "models")
 
 # Ensure the products vector store exists
 def create_vectordb():
@@ -142,12 +142,7 @@ def create_vectordb():
                 "categories": ["kitchen"]
             }
         ]
-        embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base")
-        # embedding = OpenAIEmbeddings(
-        #     openai_api_base=OPENAI_API_BASE,
-        #     openai_api_key="no-api-key",
-        #     model="google/gemma-3-4b-it",
-        # )
+        embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base", cache_folder=model_path)
         vectorstore = FAISS.from_texts(texts=[str(p) for p in products_json], embedding=embedding)
         vectorstore.save_local(vector_path)
 
@@ -155,9 +150,12 @@ def create_vectordb():
 def create_app():
     app = Flask(__name__)
 
+    OPENAI_API_BASE = os.environ["OPENAI_API_BASE"]
+
     @app.route("/", methods=['POST'])
     def talkToGemma():
-        print("Beginning RAG call")
+        print("Beginning Shopping Assistant call")
+
         print("Using OpenAI API Base: " + OPENAI_API_BASE)
         prompt = request.json['message']
         prompt = unquote(prompt)
@@ -245,6 +243,8 @@ def create_app():
 
 if __name__ == "__main__":
     # Create an instance of flask server when called directly
-    create_vectordb()
+    if ("--mkvectorstore" in sys.argv):
+        create_vectordb()
+        exit()
     app = create_app()
     app.run(host='0.0.0.0', port=8080)

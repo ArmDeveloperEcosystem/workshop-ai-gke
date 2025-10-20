@@ -37,6 +37,9 @@ COPY --from=builder /usr/local/lib/python3.12/ /usr/local/lib/python3.12/
 # Add the application
 COPY . .
 
+# Build the vector index
+RUN python shoppingassistantservice.py --mkvectorstore
+
 # set listen port
 ENV PORT=8080
 EXPOSE 8080
