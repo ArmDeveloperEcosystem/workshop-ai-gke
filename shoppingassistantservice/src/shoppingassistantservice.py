@@ -162,11 +162,12 @@ def create_app():
 
         # Step 1 – Get a room description from Gemma
         try:
-            if (not request.json['image'] or request.json['image'] == "" or not request.json['image']['url'] or request.json['image']['url'] == ""):    
+            image = request.json.get('image')
+            if not (isinstance(image, dict) or (isinstance(image, str) and image.strip() != "")):
                 err = {'content': "Please provide an image of the room you would like to decorate."}
                 return err
         except:
-            err = {'content': "Please provide an image of the room you would like to decorate."}
+            err = {'content': "Error loading image."}
             return err
 
         llm_vision = ChatOpenAI(
@@ -183,7 +184,7 @@ def create_app():
             content=[
                 {
                     "type": "text",
-                    "text": "You are a professional interior designer, give me a detailed decsription of the style of the room in this image",
+                    "text": "You are a professional interior designer, give me a detailed description of the style of the room in this image",
                 },
                 {"type": "image_url", "image_url": request.json['image']},
             ]
