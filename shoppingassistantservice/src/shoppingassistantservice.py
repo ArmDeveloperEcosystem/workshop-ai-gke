@@ -137,6 +137,7 @@ def create_vectordb():
 
 def create_app():
     app = Flask(__name__)
+    app.logger.setLevel(logging.INFO)
 
     OPENAI_API_BASE = os.environ["OPENAI_API_BASE"]
 
