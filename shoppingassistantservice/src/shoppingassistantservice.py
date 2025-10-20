@@ -1,20 +1,6 @@
 #!/usr/bin/python
-#
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import os, sys
+import logging
 
 from urllib.parse import unquote
 from langchain_core.messages import HumanMessage
@@ -23,15 +9,18 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from flask import Flask, request
 
-BASE_PATH = os.curdir#os.environ.get('HOME')
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+BASE_PATH = os.curdir
 VECTOR_DIR = os.path.join(BASE_PATH, "vector")
 vector_path = os.path.join(VECTOR_DIR, 'products')
 model_path = os.path.join(VECTOR_DIR, "models")
 
-# Ensure the products vector store exists
 def create_vectordb():
     if (not os.path.exists(vector_path)):
-        print("Creating vector store at " + vector_path)
+        logger.info("Creating vector store at %s", vector_path)
         products_json = [
             {
                 "id": "OLJCESPC7Z",
@@ -146,7 +135,6 @@ def create_vectordb():
         vectorstore = FAISS.from_texts(texts=[str(p) for p in products_json], embedding=embedding)
         vectorstore.save_local(vector_path)
 
-    
 def create_app():
     app = Flask(__name__)
 
@@ -154,23 +142,23 @@ def create_app():
 
     @app.route("/", methods=['POST'])
     def talkToGemma():
-        print("Beginning Shopping Assistant call")
-
-        print("Using OpenAI API Base: " + OPENAI_API_BASE)
+        logger.info("Beginning Shopping Assistant call")
+        logger.info("Using OpenAI API Base: %s", OPENAI_API_BASE)
         prompt = request.json['message']
         prompt = unquote(prompt)
 
         # Step 1 – Get a room description from Gemma
         try:
             image = request.json.get('image', None)
-            print(f"Image value: {image}")
+            logger.info("Image value: %s", image)
             if not (
                 (isinstance(image, dict) and bool(image)) or
                 (isinstance(image, str) and image.strip() != "")
             ):
                 err = {'content': "Please provide an image of the room you would like to decorate."}
                 return err
-        except:
+        except Exception as e:
+            logger.error("Error loading image: %s", e)
             err = {'content': "Error loading image."}
             return err
 
@@ -182,7 +170,6 @@ def create_app():
             max_tokens=None,
             timeout=None,
             max_retries=2,
-
         )
         message = HumanMessage(
             content=[
@@ -194,32 +181,24 @@ def create_app():
             ]
         )
         response = llm_vision.invoke([message])
-        print("Description step:")
-        print(response)
+        logger.info("Description step:")
+        logger.info("%s", response)
         description_response = response.content
-
 
         # Step 2 – Similarity search with the description & user prompt
         vector_search_prompt = f""" This is the user's request: {prompt} Find the most relevant items for that prompt, while matching style of the room described here: {description_response} """
-        print(vector_search_prompt)
+        logger.info("%s", vector_search_prompt)
 
         embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base")
-        # embedding = OpenAIEmbeddings(
-        #     openai_api_base=OPENAI_API_BASE,
-        #     openai_api_key="no-api-key",
-        #     model="google/gemma-3-4b-it",
-        # )
         vectorstore = FAISS.load_local(vector_path, embedding, allow_dangerous_deserialization=True)
         docs = vectorstore.similarity_search(vector_search_prompt)
-        print(f"Vector search: {description_response}")
-        print(f"Retrieved documents: {len(docs)}")
-        #Prepare relevant documents for inclusion in final prompt
+        logger.info("Vector search: %s", description_response)
+        logger.info("Retrieved documents: %d", len(docs))
         relevant_docs = ""
         for doc in docs:
             doc_details = doc.page_content
-            print(f"Adding relevant document to prompt context: {doc_details}")
+            logger.info("Adding relevant document to prompt context: %s", doc_details)
             relevant_docs += str(doc_details) + ", "
-
 
         # Step 3 – Tie it all together by augmenting our call to Gemma-3-4b-it with the description and relevant products
         llm = ChatOpenAI(
@@ -230,13 +209,12 @@ def create_app():
             max_tokens=None,
             timeout=None,
             max_retries=2,
-
         )
         design_prompt = (
             f" You are an interior designer that works for Online Boutique. You are tasked with providing recommendations to a customer on what they should add to a given room from our catalog. This is the description of the room: \n"
             f"{description_response} Here are a list of products that are relevant to it: {relevant_docs} Specifically, this is what the customer has asked for, see if you can accommodate it: {prompt} Start by repeating a brief description of the room's design to the customer, then provide your recommendations. Do your best to pick the most relevant item out of the list of products provided, but if none of them seem relevant, then say that instead of inventing a new product. At the end of the response, add a list of the IDs of the relevant products in the following format for the top 3 results: [<first product ID>], [<second product ID>], [<third product ID>] ")
-        print("Final design prompt: ")
-        print(design_prompt)
+        logger.info("Final design prompt: ")
+        logger.info("%s", design_prompt)
         design_response = llm.invoke(
             design_prompt
         )
@@ -247,7 +225,6 @@ def create_app():
     return app
 
 if __name__ == "__main__":
-    # Create an instance of flask server when called directly
     if ("--mkvectorstore" in sys.argv):
         create_vectordb()
         exit()
