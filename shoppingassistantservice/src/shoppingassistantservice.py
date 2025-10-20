@@ -162,8 +162,12 @@ def create_app():
 
         # Step 1 – Get a room description from Gemma
         try:
-            image = request.json.get('image')
-            if not (isinstance(image, dict) or (isinstance(image, str) and image.strip() != "")):
+            image = request.json.get('image', None)
+            print(f"Image value: {image}")
+            if not (
+                (isinstance(image, dict) and bool(image)) or
+                (isinstance(image, str) and image.strip() != "")
+            ):
                 err = {'content': "Please provide an image of the room you would like to decorate."}
                 return err
         except:
