@@ -35,7 +35,7 @@ WORKDIR /shoppingassistantservice
 COPY --from=builder /usr/local/lib/python3.12/ /usr/local/lib/python3.12/
 
 # Add the application
-COPY . .
+COPY shoppingassistantservice.py .
 
 # Build the vector index
 RUN python shoppingassistantservice.py --mkvectorstore
