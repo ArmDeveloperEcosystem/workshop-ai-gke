@@ -238,12 +238,17 @@ def create_app():
         prompt = unquote(prompt)
 
         # Check for an image url, call RAG only if found
-        image_url = ""
         image = request.json.get('image', None)
-        if (isinstance(image, str)):
+        image_url = None
+
+        if isinstance(image, str):
             image_url = image.strip()
-        elif (isinstance(image, dict) and "url" in image and isinstance(image["url"], str)):
+        elif isinstance(image, dict) and "url" in image and isinstance(image["url"], str):
             image_url = image["url"].strip()
+
+        # Ensure image_url is a string or set a default value
+        if not isinstance(image_url, str):
+            image_url = ""
 
         if (image_url != ""):
             return rag_chat(prompt, image_url)
