@@ -64,18 +64,46 @@ gcloud compute scp --recurse ./server/src/ {{{project_0.startup_script.vm_instan
 gcloud compute scp --recurse ./shoppingassistantservice/src/ {{{project_0.startup_script.vm_instance_name|VM_INSTANCE_NAME}}}:./shoppingassistantservice --zone {{{project_0.startup_script.vm_instance_zone|VM_ZONE}}}
 </ql-code-block>
 
+The first time you do this it may need to generate an public/private rsa key pair. Type `Y` and can press `enter` to create a key pair without a password.
+
 Now we can connect to the VM:
 
 <ql-code-block language="bash" templated>
 gcloud compute ssh --zone {{{project_0.startup_script.vm_instance_zone|VM_ZONE}}} {{{project_0.startup_script.vm_instance_name|VM_INSTANCE_NAME}}} --project {{{project_0.project_id|PROJECT_ID}}}
 </ql-code-block>
 
+You should now see that your terminal is connected to the `workshop-build-server` VM:
+
+<ql-code-block output language="bash">
+username@workshop-build-server:~$
+</ql-code-block>
+
 ### Install Docker
 
-We will need to install Docker on our VM:
+We will need to install Docker on our VM.
 
-<ql-code-block language="bash" templated>
-sudo snap install docker
+Set up Docker's apt repository:
+
+<ql-code-block language="bash">
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+</ql-code-block>
+
+Then install the latest version:
+
+<ql-code-block language="bash">
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 </ql-code-block>
 
 ## Task 2. Prepare Shopping Assistant
@@ -95,7 +123,7 @@ Next we can push the `shoppingassistantservice` image we just made to an Google 
 
 Log into your gcloud on the VM using the lab's credentials:
 
-<ql-code-block language="bash" templated>
+<ql-code-block language="bash">
 sudo gcloud auth login --no-launch-browser
 </ql-code-block>
 
@@ -142,7 +170,7 @@ Now that we've built the `llama-cpp-server` image, at this point once again we w
 
 Log into your gcloud on the VM using the lab's credentials:
 
-<ql-code-block language="bash" templated>
+<ql-code-block language="bash">
 sudo gcloud auth login --no-launch-browser
 </ql-code-block>
 
@@ -444,6 +472,8 @@ You will see the chat interface as shown below:
 
 Here, you can upload an image and type a question related to the image or the product catalog. For example, you might upload a photo of your kitchen and ask for a recommendation.
 
+If you do not have an image handy, click [this link](https://www.loc.gov/resource/ppbd.00631/) for an example image you could use from the Library of Congress collection.
+
 ### Example Response
 
 After submitting your question, the assistant will analyze the image and your query, then respond with relevant information. An example response is shown below:
@@ -458,7 +488,7 @@ GKE’s orchestration capabilities allow for automated scaling, rolling updates,
 
 Thank you for participating in this workshop!
 
-**Manual last updated**: October 16th, 2025
-**Manual Last tested**: October 16th, 2025
+**Manual last updated**: October 24th, 2025
+**Manual Last tested**: October 24th, 2025
 
 ![[/fragments/copyright]]
