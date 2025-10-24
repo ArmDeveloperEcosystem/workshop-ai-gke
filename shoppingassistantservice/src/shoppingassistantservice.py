@@ -178,7 +178,7 @@ def create_app():
                     "type": "text",
                     "text": "You are a professional interior designer, give me a detailed description of the style of the room in this image",
                 },
-                {"type": "image_url", "image_url": request.json['image']},
+                {"type": "image_url", "image_url": {"url": request.json['image']}},
             ]
         )
         response = llm_vision.invoke([message])
