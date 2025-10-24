@@ -190,7 +190,7 @@ def create_app():
         vector_search_prompt = f""" This is the user's request: {prompt} Find the most relevant items for that prompt, while matching style of the room described here: {description_response} """
         logger.info("%s", vector_search_prompt)
 
-        embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base")
+        embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base", cache_folder=model_path)
         vectorstore = FAISS.load_local(vector_path, embedding, allow_dangerous_deserialization=True)
         docs = vectorstore.similarity_search(vector_search_prompt)
         logger.info("Vector search: %s", description_response)
