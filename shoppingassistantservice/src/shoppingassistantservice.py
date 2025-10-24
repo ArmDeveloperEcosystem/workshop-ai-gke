@@ -13,7 +13,7 @@ from flask import Flask, request
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BASE_PATH = os.curdir
+BASE_PATH = os.getcwd()
 VECTOR_DIR = os.path.join(BASE_PATH, "vector")
 vector_path = os.path.join(VECTOR_DIR, 'products')
 model_path = os.path.join(VECTOR_DIR, "models")
