@@ -45,8 +45,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: false
-        image:  us-docker.pkg.dev/qwiklabs-resources/scaling-llm-with-arm-and-gke/shoppingassistantservice:development
-        imagePullPolicy: Always
+        image:  us-docker.pkg.dev/qwiklabs-resources/scaling-llm-with-arm-and-gke/shoppingassistantservice:latest
         ports:
         - name: http
           containerPort: 8080
