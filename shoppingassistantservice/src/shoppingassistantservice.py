@@ -13,7 +13,7 @@ from flask import Flask, request
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BASE_PATH = os.curdir
+BASE_PATH = os.getcwd()
 VECTOR_DIR = os.path.join(BASE_PATH, "vector")
 vector_path = os.path.join(VECTOR_DIR, 'products')
 model_path = os.path.join(VECTOR_DIR, "models")
@@ -178,7 +178,7 @@ def create_app():
                     "type": "text",
                     "text": "You are a professional interior designer, give me a detailed description of the style of the room in this image",
                 },
-                {"type": "image_url", "image_url": request.json['image']},
+                {"type": "image_url", "image_url": {"url": request.json['image']}},
             ]
         )
         response = llm_vision.invoke([message])
@@ -190,7 +190,7 @@ def create_app():
         vector_search_prompt = f""" This is the user's request: {prompt} Find the most relevant items for that prompt, while matching style of the room described here: {description_response} """
         logger.info("%s", vector_search_prompt)
 
-        embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base")
+        embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base", cache_folder=model_path)
         vectorstore = FAISS.load_local(vector_path, embedding, allow_dangerous_deserialization=True)
         docs = vectorstore.similarity_search(vector_search_prompt)
         logger.info("Vector search: %s", description_response)
