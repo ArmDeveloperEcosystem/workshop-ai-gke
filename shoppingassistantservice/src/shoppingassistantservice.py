@@ -140,6 +140,8 @@ def create_app():
     app.logger.setLevel(logging.INFO)
 
     OPENAI_API_BASE = os.environ["OPENAI_API_BASE"]
+    embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base", cache_folder=model_path)
+    vectorstore = FAISS.load_local(vector_path, embedding, allow_dangerous_deserialization=True)
 
     @app.route("/", methods=['POST'])
     def talkToGemma():
@@ -148,7 +150,7 @@ def create_app():
         prompt = request.json['message']
         prompt = unquote(prompt)
 
-        # Step 1 – Get a room description from Gemma
+        # Step 0 - Check for an Image in the request
         try:
             image = request.json.get('image', None)
             logger.info("Image value: %s", image)
@@ -163,62 +165,75 @@ def create_app():
             err = {'content': "Error loading image."}
             return err
 
-        llm_vision = ChatOpenAI(
-            openai_api_base=OPENAI_API_BASE,
-            openai_api_key="no-api-key",
-            model="google/gemma-3-4b-it",
-            temperature=0,
-            max_tokens=None,
-            timeout=None,
-            max_retries=2,
-        )
-        message = HumanMessage(
-            content=[
-                {
-                    "type": "text",
-                    "text": "You are a professional interior designer, give me a detailed description of the style of the room in this image",
-                },
-                {"type": "image_url", "image_url": {"url": request.json['image']}},
-            ]
-        )
-        response = llm_vision.invoke([message])
-        logger.info("Description step:")
-        logger.info("%s", response)
-        description_response = response.content
+        # Step 1 – Get a room description from Gemma
+        try:
+            llm_vision = ChatOpenAI(
+                openai_api_base=OPENAI_API_BASE,
+                openai_api_key="no-api-key",
+                model="google/gemma-3-4b-it",
+                temperature=0,
+                max_tokens=None,
+                timeout=None,
+                max_retries=2,
+            )
+            message = HumanMessage(
+                content=[
+                    {
+                        "type": "text",
+                        "text": "You are a professional interior designer. In 6 sentences or less give me a detailed description of the style of the room in this image",
+                    },
+                    {"type": "image_url", "image_url": {"url": request.json['image']}},
+                ]
+            )
+            response = llm_vision.invoke([message])
+            logger.info("Description step:")
+            logger.info("%s", response)
+            description_response = response.content
+        except Exception as e:
+            logger.error("Failed to retrieve image description: %s", e)
+            err = {'content': "I'm sorry, I couldn't process that image. Please try another."}
+            return err
 
         # Step 2 – Similarity search with the description & user prompt
-        vector_search_prompt = f""" This is the user's request: {prompt} Find the most relevant items for that prompt, while matching style of the room described here: {description_response} """
-        logger.info("%s", vector_search_prompt)
+        try:
+            vector_search_prompt = f""" This is the user's request: {prompt} Find the most relevant items for that prompt, while matching style of the room described here: {description_response} """
+            logger.info("Vector Search Prompt: %s", vector_search_prompt)
 
-        embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base", cache_folder=model_path)
-        vectorstore = FAISS.load_local(vector_path, embedding, allow_dangerous_deserialization=True)
-        docs = vectorstore.similarity_search(vector_search_prompt)
-        logger.info("Vector search: %s", description_response)
-        logger.info("Retrieved documents: %d", len(docs))
-        relevant_docs = ""
-        for doc in docs:
-            doc_details = doc.page_content
-            logger.info("Adding relevant document to prompt context: %s", doc_details)
-            relevant_docs += str(doc_details) + ", "
+            docs = vectorstore.similarity_search(vector_search_prompt)
+            logger.info("Retrieved documents: %d", len(docs))
+            relevant_docs = ""
+            for doc in docs:
+                doc_details = doc.page_content
+                logger.info("Adding relevant document to prompt context: %s", doc_details)
+                relevant_docs += str(doc_details) + ", "
+        except Exception as e:
+            logger.error("Failed to retrieve relevant products: %s", e)
+            err = {'content': "I'm sorry, I 'm having troublen finding relevant products. Please try again.'"}
+            return err
 
         # Step 3 – Tie it all together by augmenting our call to Gemma-3-4b-it with the description and relevant products
-        llm = ChatOpenAI(
-            openai_api_base=OPENAI_API_BASE,
-            openai_api_key="no-api-key",
-            model="google/gemma-3-4b-it",
-            temperature=0,
-            max_tokens=None,
-            timeout=None,
-            max_retries=2,
-        )
-        design_prompt = (
-            f" You are an interior designer that works for Online Boutique. You are tasked with providing recommendations to a customer on what they should add to a given room from our catalog. This is the description of the room: \n"
-            f"{description_response} Here are a list of products that are relevant to it: {relevant_docs} Specifically, this is what the customer has asked for, see if you can accommodate it: {prompt} Start by repeating a brief description of the room's design to the customer, then provide your recommendations. Do your best to pick the most relevant item out of the list of products provided, but if none of them seem relevant, then say that instead of inventing a new product. At the end of the response, add a list of the IDs of the relevant products in the following format for the top 3 results: [<first product ID>], [<second product ID>], [<third product ID>] ")
-        logger.info("Final design prompt: ")
-        logger.info("%s", design_prompt)
-        design_response = llm.invoke(
-            design_prompt
-        )
+        try:
+            llm = ChatOpenAI(
+                openai_api_base=OPENAI_API_BASE,
+                openai_api_key="no-api-key",
+                model="google/gemma-3-4b-it",
+                temperature=0,
+                max_tokens=None,
+                timeout=None,
+                max_retries=2,
+            )
+            design_prompt = (
+                f" You are an interior designer that works for Online Boutique. You are tasked with providing recommendations to a customer on what they should add to a given room from our catalog. This is the description of the room: \n"
+                f"{description_response} Here are a list of products that are relevant to it: {relevant_docs} Specifically, this is what the customer has asked for, see if you can accommodate it: {prompt} Start by giving a two sentence summary of the room's design to the customer, then provide your recommendations. Do your best to pick the most relevant item out of the list of products provided, but if none of them seem relevant, then say that instead of inventing a new product. At the end of the response, add a list of the IDs of the relevant products in the following format (without quotes) for the top 3 results: [<first product ID>], [<second product ID>], [<third product ID>] ")
+            logger.info("Final design prompt: ")
+            logger.info("%s", design_prompt)
+            design_response = llm.invoke(
+                design_prompt
+            )
+        except Exception as e:
+            logger.error("Failed to retrieve final response: %s", e)
+            err = {'content': "I'm sorry, I'm having trouble answering this one. Please try again."}
+            return err
 
         data = {'content': design_response.content}
         return data
