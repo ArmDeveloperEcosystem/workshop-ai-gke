@@ -180,7 +180,7 @@ def create_app():
                 content=[
                     {
                         "type": "text",
-                        "text": "You are a professional interior designer, give me a detailed description of the style of the room in this image",
+                        "text": "You are a professional interior designer. In 6 sentences or less give me a detailed description of the style of the room in this image",
                     },
                     {"type": "image_url", "image_url": {"url": request.json['image']}},
                 ]
@@ -224,7 +224,7 @@ def create_app():
             )
             design_prompt = (
                 f" You are an interior designer that works for Online Boutique. You are tasked with providing recommendations to a customer on what they should add to a given room from our catalog. This is the description of the room: \n"
-                f"{description_response} Here are a list of products that are relevant to it: {relevant_docs} Specifically, this is what the customer has asked for, see if you can accommodate it: {prompt} Start by repeating a brief description of the room's design to the customer, then provide your recommendations. Do your best to pick the most relevant item out of the list of products provided, but if none of them seem relevant, then say that instead of inventing a new product. At the end of the response, add a list of the IDs of the relevant products in the following format for the top 3 results: [<first product ID>], [<second product ID>], [<third product ID>] ")
+                f"{description_response} Here are a list of products that are relevant to it: {relevant_docs} Specifically, this is what the customer has asked for, see if you can accommodate it: {prompt} Start by giving a two sentence summary of the room's design to the customer, then provide your recommendations. Do your best to pick the most relevant item out of the list of products provided, but if none of them seem relevant, then say that instead of inventing a new product. At the end of the response, add a list of the IDs of the relevant products in the following format (without quotes) for the top 3 results: [<first product ID>], [<second product ID>], [<third product ID>] ")
             logger.info("Final design prompt: ")
             logger.info("%s", design_prompt)
             design_response = llm.invoke(
