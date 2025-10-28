@@ -140,7 +140,7 @@ def create_app():
     app.logger.setLevel(logging.INFO)
 
     OPENAI_API_BASE = os.environ["OPENAI_API_BASE"]
-    embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base", cache_folder=model_path, local_files_only=True)
+    embedding = HuggingFaceEmbeddings(model_name="thenlper/gte-base", cache_folder=model_path)
     vectorstore = FAISS.load_local(vector_path, embedding, allow_dangerous_deserialization=True)
 
     @app.route("/", methods=['POST'])
