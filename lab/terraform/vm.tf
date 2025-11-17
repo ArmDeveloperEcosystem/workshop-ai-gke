@@ -15,4 +15,25 @@
         network    = var.gcp_network
         access_config {} # Enables external IP
     }
+    metadata = {
+    startup-script = <<SCRIPT
+        #!/bin/bash
+        # Install kubectl
+        # curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
+        # sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+        
+        # Update Google CLI, kubectl, and gke-auth-plugin
+        sudo apt-get update
+        sudo apt-get install -y apt-transport-https ca-certificates gnupg curl
+        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+        echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+        sudo apt-get update && sudo apt-get install google-cloud-cli
+        sudo apt-get install -y kubectl
+        sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+      SCRIPT
+    }
+
+    service_account {
+        scopes = ["cloud-platform"]
+    }
 }

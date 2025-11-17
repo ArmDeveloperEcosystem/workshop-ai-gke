@@ -200,7 +200,7 @@ sudo apt update && sudo apt install -y python3-venv
 python3 -m venv venv
 source venv/bin/activate
 
-pip install -U "huggingface_hub[cli]"
+pip install -U "huggingface_hub[cli]==0.36.0"
 
 mkdir ./models/
 </ql-code-block>
@@ -292,16 +292,12 @@ exit
 You should now be back to your cloud shell console.
 
 We can then download quantized versions of the models. You can use models we quantized in advance, or download the model files from your VM:
+<!-- Removed option to download model from VM as it causes the Cloud Shell to run out of space-->
 
-<ql-code>
 <ql-code-block language="bash" tabTitle="Download Model">
 gcloud storage cp --recursive gs://isv048-scaling-llm-with-arm-and-gke/models/ .
 </ql-code-block>
-<ql-code-block language="bash" tabTitle="Copy from VM" templated>
-# `{{{project_0.startup_script.vm_instance_name|VM_INSTANCE_NAME}}}` is the name of the virtual machine we were just working in.
-gcloud compute scp --recurse {{{project_0.startup_script.vm_instance_name|VM_INSTANCE_NAME}}}:~/models/ ./models/ --zone {{{project_0.startup_script.vm_instance_zone|VM_ZONE}}}
-</ql-code-block>
-</ql-code>
+
 
 ## Task 5. Deploy Llama.cpp kubernetes
 
@@ -398,7 +394,8 @@ llm-server-66575d6d5b-jgfn2              0/1     Init:0/1   0          10s
 Replace `llm-server-POD-NAME` with the name of the pod:
 
 <ql-code-block language="bash">
-kubectl exec llm-server-POD-NAME -- curl -X POST "http://localhost:8000/v1/chat/completions" \
+LLM_SERVER=`kubectl get pods | grep ^llm | cut -d' ' -f1`
+kubectl exec $LLM_SERVER -- curl -X POST "http://localhost:8000/v1/chat/completions" \
     -H "Content-Type: application/json" \
     --data '{
         "messages": [{
@@ -472,13 +469,15 @@ You will see the chat interface as shown below:
 
 Here, you can upload an image and type a question related to the image or the product catalog. For example, you might upload a photo of your kitchen and ask for a recommendation.
 
-If you do not have an image handy, click [this link](https://www.loc.gov/resource/ppbd.00631/) for an example image you could use from the Library of Congress collection.
+Right-click the image below and save it to your computer, then use it to submit a request to the Shopping Assistant agent.
+
+<img src="img/kitchen.jpg" alt="Sample Image Of A Kitchen."  width="624.00"/>
 
 ### Example Response
 
 After submitting your question, the assistant will analyze the image and your query, then respond with relevant information. An example response is shown below:
 
-<img src="img/response.png" alt="Shopping Assistant Response."  width="624.00"/>
+<img src="img/response.png" alt="Shopping Assistant Response."  width="312.00"/>
 
 ## Scalability with Arm and Google Kubernetes Engine
 
@@ -488,7 +487,7 @@ GKE’s orchestration capabilities allow for automated scaling, rolling updates,
 
 Thank you for participating in this workshop!
 
-**Manual last updated**: October 24th, 2025
-**Manual Last tested**: October 24th, 2025
+**Manual last updated**: November 7th, 2025
+**Manual Last tested**: November 7th, 2025
 
 ![[/fragments/copyright]]
